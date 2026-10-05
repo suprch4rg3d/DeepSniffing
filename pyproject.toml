@@ -1,0 +1,28 @@
+[project]
+name = "deepsniffing"
+version = "0.1.0"
+description = "Predicting human odor profiles from SMILES strings via sequence-based deep learning for (MAI642-Deep Learning) group project"
+authors = [
+    { name = "Manos (suprch4rg3d)" },
+    { name = "Konstantin (kkraso01)" },
+    { name = "Anastasia (akyria25)" },
+]
+requires-python = ">=3.13, <3.14"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scikit-learn>=1.4",
+    "torch>=2.2",
+    "rdkit>=2023.9",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "tqdm>=4.66",
+    "imbalanced-learn>=0.12",
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

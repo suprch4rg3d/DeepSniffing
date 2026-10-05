@@ -1,0 +1,13 @@
+# Mirror of the [project] dependencies in pyproject.toml.
+# Poetry users: run `poetry install` instead and ignore this file.
+# Keep this file in sync with pyproject.toml when dependencies change.
+
+numpy>=1.26
+pandas>=2.1
+scikit-learn>=1.4
+torch>=2.2
+rdkit>=2023.9
+matplotlib>=3.8
+seaborn>=0.13
+tqdm>=4.66
+imbalanced-learn>=0.12

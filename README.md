@@ -121,6 +121,18 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Development
+
+The repository uses [ruff](https://docs.astral.sh/ruff/) for linting and
+formatting, configured in `pyproject.toml` (line length 100, import sorting
+enabled). It is installed with poetry as a dev dependency. Run both before
+pushing:
+
+```bash
+poetry run ruff check .
+poetry run ruff format .
+```
+
 ## Data
 
 ### Build the base datasets from raw data
@@ -130,16 +142,19 @@ missing DREAM and Pyrfume files, then fetches PubChem compound properties. It
 skips source files that are already present and reuses previously fetched
 PubChem records.
 
+The commands are written for macOS/Linux; on Windows the same commands work
+unchanged in PowerShell or cmd.
+
 If the processed datasets are already included in the repository, you can use
 them directly and skip rebuilding.
 
-```powershell
-poetry run python .\scripts\data\prepare_data.py
-poetry run python .\scripts\preprocessing\dream_dataset.py
-poetry run python .\scripts\preprocessing\morgan_fingerprints.py
-poetry run python .\scripts\preprocessing\split_dataset.py
-poetry run python .\scripts\preprocessing\dataset_inspector.py
-poetry run python .\scripts\preprocessing\target_scaler.py
+```bash
+poetry run python scripts/data/prepare_data.py
+poetry run python scripts/preprocessing/dream_dataset.py
+poetry run python scripts/preprocessing/morgan_fingerprints.py
+poetry run python scripts/preprocessing/split_dataset.py
+poetry run python scripts/preprocessing/dataset_inspector.py
+poetry run python scripts/preprocessing/target_scaler.py
 ```
 
 The scripts create:
@@ -169,12 +184,12 @@ The base dataset does not require the extra numeric descriptors. To create a
 separate enriched dataset, run these additional commands after the base
 `dream_dataset.py` step:
 
-```powershell
-poetry run python .\scripts\preprocessing\enrich_molecules.py
-poetry run python .\scripts\preprocessing\split_dataset.py
-poetry run python .\scripts\preprocessing\dataset_inspector.py
-poetry run python .\scripts\preprocessing\feature_scaler.py
-poetry run python .\scripts\preprocessing\enriched_feature_scaler.py
+```bash
+poetry run python scripts/preprocessing/enrich_molecules.py
+poetry run python scripts/preprocessing/split_dataset.py
+poetry run python scripts/preprocessing/dataset_inspector.py
+poetry run python scripts/preprocessing/feature_scaler.py
+poetry run python scripts/preprocessing/enriched_feature_scaler.py
 ```
 
 This creates `molecules_enriched.csv`, then
@@ -225,8 +240,8 @@ scripts, saved results, and supporting data.
 
 To download raw sources without querying PubChem, run:
 
-```powershell
-poetry run python .\scripts\data\prepare_data.py --download-only
+```bash
+poetry run python scripts/data/prepare_data.py --download-only
 ```
 
 Use `--force-download` with `prepare_data.py` to redownload the DREAM and

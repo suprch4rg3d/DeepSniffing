@@ -54,7 +54,7 @@ DeepSniffing/
 │       ├── molecules_enriched.csv              Base molecules plus RDKit descriptors
 │       ├── molecules_enriched_with_split.csv   Enriched dataset with split
 │       ├── scalers/                             Saved preprocessing scalers
-│       └── inspection/                           Generated dataset-inspection PNGs
+│       └── inspection/                          Generated PNGs (created by dataset_inspector.py; not committed)
 ├── scripts/
 │   ├── data/
 │   │   └── prepare_data.py                     Download raw DREAM/Pyrfume data and PubChem properties
@@ -85,7 +85,7 @@ DeepSniffing/
 ├── docs/
 │   └── mai642_project_proposal.md              Course project proposal
 ├── pyproject.toml                              Poetry project and dependency configuration
-├── poetry.toml                                 Poetry configuration
+├── poetry.lock                                 Locked dependency versions
 ├── requirements.txt                            Pip dependency list
 └── README.md                                   Setup, data preparation, and training guide
 ```
@@ -99,52 +99,26 @@ DeepSniffing/
 
 ## Installation
 
-**Clone the repository (all platforms):**
+**Clone the repository:**
 
 ```bash
 git clone https://github.com/suprch4rg3d/DeepSniffing.git
 cd DeepSniffing
 ```
 
-This project targets **Python 3.13** (see `requires-python` in `pyproject.toml`).
-If you have several Python versions installed, make sure `python` (or `py` on
-Windows) resolves to 3.13 before creating the environment.
-
-### Method A — Poetry (recommended)
-
-Identical on macOS, Linux, and Windows:
+**With Poetry (recommended):**
 
 ```bash
-poetry install    # install dependencies, including pandas and RDKit
+poetry shell      # create and activate the project environment
+poetry install    # install the dependencies, including pandas and RDKit
 ```
 
-Use `poetry run` to run project commands in the managed environment.
-
-### Method B — Plain pip
-
-**macOS / Linux:**
+**With plain pip (no Poetry):**
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-**Windows (PowerShell or cmd):**
-
-```powershell
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-> If `python` is not recognised on Windows, use the launcher instead:
-> `py -3.13 -m venv .venv`. To leave the environment later, run `deactivate`.
-
-### Verify the installation
-
-```bash
-python -c "import numpy, pandas, sklearn, torch, rdkit; print('dependencies OK')"
 ```
 
 ## Data

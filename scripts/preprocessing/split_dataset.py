@@ -27,8 +27,7 @@ def split_molecules(molecules: pd.DataFrame) -> pd.DataFrame:
     missing_columns = required_columns.difference(molecules.columns)
     if missing_columns:
         raise ValueError(
-            "Input dataset is missing required columns: "
-            f"{', '.join(sorted(missing_columns))}"
+            f"Input dataset is missing required columns: {', '.join(sorted(missing_columns))}"
         )
     if molecules["CID"].isna().any():
         raise ValueError("Input dataset contains missing CIDs; resolve them before splitting.")
@@ -89,9 +88,7 @@ def main() -> None:
     base, enriched = create_splits()
     dataset = enriched if enriched is not None else base
     output_path = ENRICHED_OUTPUT_PATH if enriched is not None else BASE_OUTPUT_PATH
-    counts = dataset["split"].value_counts().reindex(
-        ["train", "validation", "test"], fill_value=0
-    )
+    counts = dataset["split"].value_counts().reindex(["train", "validation", "test"], fill_value=0)
     print(f"Saved {len(base)} base molecules to {BASE_OUTPUT_PATH}")
     print(f"Saved {len(dataset)} molecules to {output_path}")
     print(counts.to_string())

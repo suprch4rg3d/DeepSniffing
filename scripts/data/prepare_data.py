@@ -73,10 +73,7 @@ def download_sources(force: bool) -> None:
         download_file(url, DREAM_DATA_DIR / filename, force)
 
     for filename in PYRFUME_FILES:
-        url = (
-            "https://raw.githubusercontent.com/pyrfume/pyrfume-data/"
-            f"{PYRFUME_COMMIT}/{filename}"
-        )
+        url = f"https://raw.githubusercontent.com/pyrfume/pyrfume-data/{PYRFUME_COMMIT}/{filename}"
         download_file(url, PYRFUME_DIR / filename, force)
 
 
@@ -100,9 +97,7 @@ def fetch_pubchem_batch(cids: list[int]) -> dict[int, dict[str, str]]:
             with urllib.request.urlopen(url, timeout=60) as response:
                 payload = json.load(response)
             return {
-                int(entry["CID"]): {
-                    name: str(entry.get(name, "")) for name in PROPERTIES
-                }
+                int(entry["CID"]): {name: str(entry.get(name, "")) for name in PROPERTIES}
                 for entry in payload["PropertyTable"]["Properties"]
             }
         except (urllib.error.URLError, KeyError, ValueError) as error:
@@ -137,15 +132,10 @@ def fetch_pubchem_properties() -> int:
         with OUTPUT_PATH.open(encoding="utf-8", newline="") as file:
             for row in csv.DictReader(file):
                 if row.get("CID", "").isdigit():
-                    cached[int(row["CID"])] = {
-                        name: row.get(name, "") for name in PROPERTIES
-                    }
+                    cached[int(row["CID"])] = {name: row.get(name, "") for name in PROPERTIES}
 
     pending = sorted(cids - set(cached))
-    print(
-        f"{len(cids)} unique CIDs; {len(cached)} cached; "
-        f"fetching {len(pending)} from PubChem."
-    )
+    print(f"{len(cids)} unique CIDs; {len(cached)} cached; fetching {len(pending)} from PubChem.")
     missing: list[int] = []
     for start in range(0, len(pending), BATCH_SIZE):
         batch = pending[start : start + BATCH_SIZE]
@@ -176,9 +166,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Download DREAM/Pyrfume inputs and fetch PubChem properties."
     )
-    parser.add_argument(
-        "--download-only", action="store_true", help="download raw sources only"
-    )
+    parser.add_argument("--download-only", action="store_true", help="download raw sources only")
     parser.add_argument(
         "--force-download",
         action="store_true",

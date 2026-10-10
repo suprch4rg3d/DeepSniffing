@@ -48,7 +48,7 @@ def generate_fingerprints() -> pd.DataFrame:
         fingerprint = generator.GetFingerprint(molecule)
         bits = np.zeros(FINGERPRINT_SIZE, dtype=np.uint8)
         DataStructs.ConvertToNumpyArray(fingerprint, bits)
-        rows.append({"CID": int(cid), **dict(zip(FINGERPRINT_COLUMNS, bits.tolist()))})
+        rows.append({"CID": int(cid), **dict(zip(FINGERPRINT_COLUMNS, bits.tolist(), strict=True))})
 
     result = pd.DataFrame(rows, columns=["CID", *FINGERPRINT_COLUMNS])
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

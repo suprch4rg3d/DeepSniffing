@@ -21,9 +21,7 @@ def describe_molecule(smiles: str, cid: int) -> dict[str, int | float | str]:
     return {
         "rdkit_molecular_formula": rdMolDescriptors.CalcMolFormula(molecule),
         "rdkit_atom_count_c": sum(atom.GetAtomicNum() == 6 for atom in atoms),
-        "rdkit_atom_count_h": sum(
-            atom.GetTotalNumHs(includeNeighbors=True) for atom in atoms
-        ),
+        "rdkit_atom_count_h": sum(atom.GetTotalNumHs(includeNeighbors=True) for atom in atoms),
         "rdkit_atom_count_n": sum(atom.GetAtomicNum() == 7 for atom in atoms),
         "rdkit_atom_count_o": sum(atom.GetAtomicNum() == 8 for atom in atoms),
         "rdkit_atom_count_p": sum(atom.GetAtomicNum() == 15 for atom in atoms),
@@ -51,8 +49,7 @@ def enrich_dataset() -> pd.DataFrame:
     missing_columns = required_columns.difference(molecules.columns)
     if missing_columns:
         raise ValueError(
-            "Input dataset is missing required columns: "
-            f"{', '.join(sorted(missing_columns))}"
+            f"Input dataset is missing required columns: {', '.join(sorted(missing_columns))}"
         )
     if molecules["CID"].isna().any():
         raise ValueError("Input dataset contains missing CIDs.")

@@ -58,9 +58,7 @@ def fit_and_save_enriched_feature_scaler(
     return artifact
 
 
-def transform_enriched_features(
-    data: pd.DataFrame, artifact: dict[str, Any]
-) -> np.ndarray:
+def transform_enriched_features(data: pd.DataFrame, artifact: dict[str, Any]) -> np.ndarray:
     feature_columns = artifact["feature_columns"]
     missing = set(feature_columns).difference(data.columns)
     if missing:

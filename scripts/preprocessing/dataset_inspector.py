@@ -38,9 +38,7 @@ def inspect_dataset() -> None:
     if not {"train", "validation", "test"}.issubset(set(dataset["split"].dropna())):
         raise ValueError("Dataset must contain train, validation, and test split assignments.")
 
-    canonical_smiles = (
-        dataset["rdkit_canonical_smiles"].fillna("").astype(str).str.strip()
-    )
+    canonical_smiles = dataset["rdkit_canonical_smiles"].fillna("").astype(str).str.strip()
     dataset = dataset.loc[canonical_smiles.ne("")].copy()
     target_columns = [
         column for column in dataset.columns if column.startswith(DREAM_TARGET_PREFIX)
@@ -62,7 +60,9 @@ def inspect_dataset() -> None:
     split_counts = dataset["split"].value_counts().reindex(split_names, fill_value=0)
 
     figure, axis = plt.subplots(figsize=(7, 4))
-    bars = axis.bar(split_counts.index, split_counts.values, color=("#386cb0", "#7fc97f", "#fdc086"))
+    bars = axis.bar(
+        split_counts.index, split_counts.values, color=("#386cb0", "#7fc97f", "#fdc086")
+    )
     axis.set_title("Molecules in each split")
     axis.set_ylabel("Molecules")
     axis.bar_label(bars, fmt="%d")

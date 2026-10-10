@@ -90,13 +90,12 @@ def main() -> None:
     missing_targets = set(DREAM_TARGET_COLUMNS).difference(dataset.columns)
     if missing_targets:
         raise ValueError(
-            "Base dataset is missing DREAM mean targets: "
-            f"{', '.join(sorted(missing_targets))}"
+            f"Base dataset is missing DREAM mean targets: {', '.join(sorted(missing_targets))}"
         )
 
-    training_targets = dataset.loc[
-        dataset["split"] == "train", DREAM_TARGET_COLUMNS
-    ].dropna(subset=DREAM_TARGET_COLUMNS)
+    training_targets = dataset.loc[dataset["split"] == "train", DREAM_TARGET_COLUMNS].dropna(
+        subset=DREAM_TARGET_COLUMNS
+    )
     if training_targets.empty:
         raise ValueError("Training split has no complete DREAM target rows.")
 

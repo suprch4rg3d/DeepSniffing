@@ -6,9 +6,6 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
-
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,19 +16,18 @@ from sklearn.preprocessing import StandardScaler
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from scripts.preprocessing.enriched_feature_scaler import ENRICHED_FEATURE_COLUMNS
-from scripts.preprocessing.smiles_tokenizer import SmilesTokenizer
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+from scripts.preprocessing.enriched_feature_scaler import ENRICHED_FEATURE_COLUMNS  # noqa: E402
+from scripts.preprocessing.smiles_tokenizer import SmilesTokenizer  # noqa: E402
 
 DATA = ROOT / "data/processed/dream_pyrfume/molecules_enriched.csv"
 MORGAN_FINGERPRINTS = ROOT / "data/processed/dream_pyrfume/morgan_fingerprints.csv"
 TRAIN_RATINGS = ROOT / "data/raw/dream-olfaction-prediction/data/TrainSet.txt"
 TEST_RATINGS = ROOT / "data/raw/dream-olfaction-prediction/data/TestSet.txt"
-REFERENCE_PREDICTIONS = (
-    ROOT / "results/baseline/dream_challenge/challenge_2_testset_1446435104.txt"
-)
-PUBLISHED_BENCHMARKS = (
-    ROOT / "results/baseline/dream_challenge/published_challenge_scores.json"
-)
+REFERENCE_PREDICTIONS = ROOT / "results/baseline/dream_challenge/challenge_2_testset_1446435104.txt"
+PUBLISHED_BENCHMARKS = ROOT / "results/baseline/dream_challenge/published_challenge_scores.json"
 OUTPUT = ROOT / "output/custom_model"
 CHECKPOINTS = OUTPUT / "checkpoints"
 PLOTS = OUTPUT / "plots"
@@ -148,19 +144,14 @@ def aggregate_high_intensity_targets(path: Path) -> pd.DataFrame:
     normalized_columns = {
         column: normalize_target_name(column)
         for column in ratings.columns
-        if column
-        not in {"CID", "Odor", "Replicate", "Intensity", "Dilution", "subject #"}
+        if column not in {"CID", "Odor", "Replicate", "Intensity", "Dilution", "subject #"}
     }
     ratings = ratings.rename(columns=normalized_columns)
     missing = required.difference(ratings.columns)
     if missing:
-        raise ValueError(
-            f"DREAM rating file is missing columns: {', '.join(sorted(missing))}"
-        )
+        raise ValueError(f"DREAM rating file is missing columns: {', '.join(sorted(missing))}")
 
-    high = ratings.loc[
-        ratings["Intensity"].astype(str).str.strip().str.lower() == "high"
-    ].copy()
+    high = ratings.loc[ratings["Intensity"].astype(str).str.strip().str.lower() == "high"].copy()
     if high.empty:
         raise ValueError(f"No high-intensity ratings found in {path}")
     high["CID"] = pd.to_numeric(high["CID"], errors="raise").astype("int64")
@@ -172,9 +163,7 @@ def aggregate_high_intensity_targets(path: Path) -> pd.DataFrame:
     subject_means = high.groupby(["CID", "subject #"])[TARGETS].mean()
     means = subject_means.groupby(level="CID").mean()
     standard_deviations = subject_means.groupby(level="CID").std(ddof=1)
-    summary = pd.concat(
-        [means.add_prefix("mean_"), standard_deviations.add_prefix("std_")], axis=1
-    )
+    summary = pd.concat([means.add_prefix("mean_"), standard_deviations.add_prefix("std_")], axis=1)
     ordered_columns = [f"mean_{target}" for target in TARGETS] + [
         f"std_{target}" for target in TARGETS
     ]
@@ -194,9 +183,7 @@ def pearson_across_molecules(actual: np.ndarray, predicted: np.ndarray) -> float
 def dream_challenge_metrics(actual: np.ndarray, predicted: np.ndarray) -> dict:
     target_count = len(TARGETS)
     if actual.shape != predicted.shape or actual.shape[1] != target_count * 2:
-        raise ValueError(
-            "DREAM Q2 scoring expects 21 means followed by 21 standard deviations."
-        )
+        raise ValueError("DREAM Q2 scoring expects 21 means followed by 21 standard deviations.")
 
     correlations = {
         "intensity_mean": pearson_across_molecules(actual[:, 0], predicted[:, 0]),
@@ -226,9 +213,7 @@ def dream_challenge_metrics(actual: np.ndarray, predicted: np.ndarray) -> dict:
             )
         ),
     }
-    z_scores = {
-        name: correlations[name] / null_sd for name, null_sd in OFFICIAL_NULL_SD.items()
-    }
+    z_scores = {name: correlations[name] / null_sd for name, null_sd in OFFICIAL_NULL_SD.items()}
     return {
         "pearson_correlations": correlations,
         "z_scores": z_scores,
@@ -242,20 +227,14 @@ def prediction_matrix_from_submission(path: Path, cids: list[int]) -> np.ndarray
     if not {"CID", "descriptor", "value", "sigma"}.issubset(submission.columns):
         raise ValueError(f"Unexpected DREAM prediction file format: {path}")
     submission["CID"] = pd.to_numeric(submission["CID"], errors="raise").astype("int64")
-    submission["target"] = (
-        submission["descriptor"].astype(str).map(normalize_target_name)
-    )
+    submission["target"] = submission["descriptor"].astype(str).map(normalize_target_name)
     value = submission.pivot(index="CID", columns="target", values="value")
     sigma = submission.pivot(index="CID", columns="target", values="sigma")
     expected_cids = set(cids)
     if set(value.index) != expected_cids or set(sigma.index) != expected_cids:
-        raise ValueError(
-            f"Reference predictions do not match the official test CIDs: {path}"
-        )
+        raise ValueError(f"Reference predictions do not match the official test CIDs: {path}")
     if set(value.columns) != set(TARGETS) or set(sigma.columns) != set(TARGETS):
-        raise ValueError(
-            f"Reference predictions do not contain exactly 21 DREAM targets: {path}"
-        )
+        raise ValueError(f"Reference predictions do not contain exactly 21 DREAM targets: {path}")
     value = value.loc[cids, TARGETS].to_numpy(dtype=np.float64)
     sigma = sigma.loc[cids, TARGETS].to_numpy(dtype=np.float64)
     return np.concatenate((value, sigma), axis=1)
@@ -275,9 +254,7 @@ def prepare_data():
     fingerprints = pd.read_csv(MORGAN_FINGERPRINTS)
     features = ENRICHED_FEATURE_COLUMNS.copy()
     if "CID" not in fingerprints.columns:
-        raise ValueError(
-            f"Morgan fingerprint file has no CID column: {MORGAN_FINGERPRINTS}"
-        )
+        raise ValueError(f"Morgan fingerprint file has no CID column: {MORGAN_FINGERPRINTS}")
     fingerprint_columns = [
         column for column in fingerprints.columns if column.startswith("morgan_")
     ]
@@ -289,9 +266,7 @@ def prepare_data():
         )
     if fingerprints["CID"].isna().any() or fingerprints["CID"].duplicated().any():
         raise ValueError("Morgan fingerprints must have one non-empty row per CID.")
-    fingerprints["CID"] = pd.to_numeric(fingerprints["CID"], errors="raise").astype(
-        "int64"
-    )
+    fingerprints["CID"] = pd.to_numeric(fingerprints["CID"], errors="raise").astype("int64")
     fingerprint_values = fingerprints[fingerprint_columns].to_numpy()
     if not np.isin(fingerprint_values, (0, 1)).all():
         raise ValueError("Morgan fingerprint columns must contain only binary values.")
@@ -299,45 +274,31 @@ def prepare_data():
     required_molecules = {"CID", "rdkit_canonical_smiles", *features}
     missing = required_molecules.difference(molecules.columns)
     if missing:
-        raise ValueError(
-            f"Enriched molecule data is missing: {', '.join(sorted(missing))}"
-        )
+        raise ValueError(f"Enriched molecule data is missing: {', '.join(sorted(missing))}")
     if molecules["CID"].duplicated().any():
         raise ValueError("Enriched molecule data must contain one row per CID.")
     molecules["CID"] = pd.to_numeric(molecules["CID"], errors="raise").astype("int64")
     if set(molecules["CID"]) != set(fingerprints["CID"]):
-        raise ValueError(
-            "Morgan fingerprint CIDs do not match the enriched molecule CIDs."
-        )
-    molecules = molecules.merge(
-        fingerprints, on="CID", how="left", validate="one_to_one"
-    )
+        raise ValueError("Morgan fingerprint CIDs do not match the enriched molecule CIDs.")
+    molecules = molecules.merge(fingerprints, on="CID", how="left", validate="one_to_one")
 
     train_targets = aggregate_high_intensity_targets(TRAIN_RATINGS)
     test_targets = aggregate_high_intensity_targets(TEST_RATINGS)
     molecule_by_cid = molecules.set_index("CID")
     if not set(train_targets["CID"]).issubset(molecule_by_cid.index):
-        raise ValueError(
-            "Some official DREAM training CIDs have no molecular features."
-        )
+        raise ValueError("Some official DREAM training CIDs have no molecular features.")
     if not set(test_targets["CID"]).issubset(molecule_by_cid.index):
         raise ValueError("Some official DREAM test CIDs have no molecular features.")
 
-    train_targets = train_targets.merge(
-        molecules, on="CID", how="left", validate="one_to_one"
-    )
-    test_targets = test_targets.merge(
-        molecules, on="CID", how="left", validate="one_to_one"
-    )
+    train_targets = train_targets.merge(molecules, on="CID", how="left", validate="one_to_one")
+    test_targets = test_targets.merge(molecules, on="CID", how="left", validate="one_to_one")
     target_columns = [f"mean_{target}" for target in TARGETS] + [
         f"std_{target}" for target in TARGETS
     ]
     train_targets = train_targets.dropna(subset=target_columns).copy()
     test_targets = test_targets.dropna(subset=target_columns).copy()
     if len(test_targets) != 69:
-        raise ValueError(
-            f"Expected the official 69-molecule test set; found {len(test_targets)}."
-        )
+        raise ValueError(f"Expected the official 69-molecule test set; found {len(test_targets)}.")
 
     train_rows, validation_rows = train_test_split(
         np.arange(len(train_targets)),
@@ -349,9 +310,7 @@ def prepare_data():
     validation = train_targets.iloc[validation_rows].reset_index(drop=True)
 
     feature_scaler = StandardScaler().fit(train[features].to_numpy(dtype=np.float64))
-    target_scaler = StandardScaler().fit(
-        train[target_columns].to_numpy(dtype=np.float64)
-    )
+    target_scaler = StandardScaler().fit(train[target_columns].to_numpy(dtype=np.float64))
     tokenizer = SmilesTokenizer()
     train_smiles = train["rdkit_canonical_smiles"].fillna("").astype(str).tolist()
     if not train_smiles or any(not value.strip() for value in train_smiles):
@@ -365,9 +324,7 @@ def prepare_data():
         tokens = np.asarray(
             [tokenizer.encode(value, MAX_LENGTH) for value in smiles], dtype=np.int64
         )
-        scaled_features = feature_scaler.transform(
-            rows[features].to_numpy(dtype=np.float64)
-        )
+        scaled_features = feature_scaler.transform(rows[features].to_numpy(dtype=np.float64))
         fingerprint_values = rows[fingerprint_columns].to_numpy(dtype=np.float32)
         tensors = (
             torch.tensor(tokens, dtype=torch.long),
@@ -409,9 +366,7 @@ def predict_values(model, arrays, target_scaler, device) -> np.ndarray:
     tokens, features, fingerprints = arrays[:3]
     with torch.no_grad():
         scaled_prediction = (
-            model(tokens.to(device), features.to(device), fingerprints.to(device))
-            .cpu()
-            .numpy()
+            model(tokens.to(device), features.to(device), fingerprints.to(device)).cpu().numpy()
         )
     predictions = target_scaler.inverse_transform(scaled_prediction)
     predictions[:, : len(TARGETS)] = np.clip(predictions[:, : len(TARGETS)], 0, 100)
@@ -427,9 +382,9 @@ def train_model(arrays, raw_targets, vocab_size, feature_count, target_scaler, d
         generator=torch.Generator().manual_seed(SEED),
     )
     fingerprint_count = arrays["train"][2].shape[1]
-    model = CustomOdorModel(
-        vocab_size, feature_count, fingerprint_count, len(TARGETS) * 2
-    ).to(device)
+    model = CustomOdorModel(vocab_size, feature_count, fingerprint_count, len(TARGETS) * 2).to(
+        device
+    )
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)
     loss_fn = nn.MSELoss()
     best_score, best_weights, best_epoch, stale_epochs = float("-inf"), None, 0, 0
@@ -471,9 +426,7 @@ def train_model(arrays, raw_targets, vocab_size, feature_count, target_scaler, d
             validation_loss = loss_fn(
                 torch.tensor(validation_prediction_scaled), validation_targets
             ).item()
-        validation_prediction = target_scaler.inverse_transform(
-            validation_prediction_scaled
-        )
+        validation_prediction = target_scaler.inverse_transform(validation_prediction_scaled)
         validation_prediction[:, : len(TARGETS)] = np.clip(
             validation_prediction[:, : len(TARGETS)], 0, 100
         )
@@ -492,8 +445,7 @@ def train_model(arrays, raw_targets, vocab_size, feature_count, target_scaler, d
         if score > best_score:
             best_score = score
             best_weights = {
-                key: value.detach().cpu().clone()
-                for key, value in model.state_dict().items()
+                key: value.detach().cpu().clone() for key, value in model.state_dict().items()
             }
             best_epoch = epoch + 1
             stale_epochs = 0
@@ -566,9 +518,7 @@ def save_test_metrics_plot(metrics: dict) -> None:
     plt.close(figure)
 
 
-def save_challenge_comparison_plot(
-    custom_metrics: dict, reference_metrics: dict | None
-) -> None:
+def save_challenge_comparison_plot(custom_metrics: dict, reference_metrics: dict | None) -> None:
     benchmarks = json.loads(PUBLISHED_BENCHMARKS.read_text(encoding="utf-8"))
     names = ["Custom model"]
     scores = [custom_metrics["dream_challenge_score"]]
@@ -605,8 +555,7 @@ def prediction_frame(cids: list[int], predictions: np.ndarray) -> pd.DataFrame:
         for target_index, target in enumerate(TARGETS):
             descriptor = (
                 target.upper().replace("_", "/")
-                if target
-                in {"intensity_strength", "valence_pleasantness", "ammonia_urinous"}
+                if target in {"intensity_strength", "valence_pleasantness", "ammonia_urinous"}
                 else target.upper()
             )
             if target == "valence_pleasantness":
@@ -668,25 +617,16 @@ def main() -> None:
     test_prediction = predict_values(model, arrays["test"], target_scaler, device)
     test_metrics = dream_challenge_metrics(raw_targets["test"], test_prediction)
     test_metrics["evaluation_set"] = "DREAM official TestSet.txt (69 molecules)"
-    test_metrics["prediction_targets"] = (
-        "21 high-intensity means and 21 standard deviations"
-    )
+    test_metrics["prediction_targets"] = "21 high-intensity means and 21 standard deviations"
 
     reference_metrics = None
     if REFERENCE_PREDICTIONS.is_file():
-        reference_prediction = prediction_matrix_from_submission(
-            REFERENCE_PREDICTIONS, test_cids
-        )
-        reference_metrics = dream_challenge_metrics(
-            raw_targets["test"], reference_prediction
-        )
+        reference_prediction = prediction_matrix_from_submission(REFERENCE_PREDICTIONS, test_cids)
+        reference_metrics = dream_challenge_metrics(raw_targets["test"], reference_prediction)
         reference_metrics["source"] = str(REFERENCE_PREDICTIONS.relative_to(ROOT))
-        reference_metrics["evaluation_set"] = (
-            "DREAM official TestSet.txt (69 molecules)"
-        )
+        reference_metrics["evaluation_set"] = "DREAM official TestSet.txt (69 molecules)"
         write_metrics(
-            ROOT
-            / "results/baseline/dream_challenge/official_testset_reference_score.json",
+            ROOT / "results/baseline/dream_challenge/official_testset_reference_score.json",
             reference_metrics,
         )
 
@@ -701,10 +641,7 @@ def main() -> None:
             {
                 "epoch": index + 1,
                 "dream_challenge_score": values["dream_challenge_score"],
-                **{
-                    f"pearson_{key}": val
-                    for key, val in values["pearson_correlations"].items()
-                },
+                **{f"pearson_{key}": val for key, val in values["pearson_correlations"].items()},
                 **{f"z_{key}": val for key, val in values["z_scores"].items()},
             }
             for index, values in enumerate(history["validation_metrics"])
@@ -714,9 +651,7 @@ def main() -> None:
     torch.save(
         {
             "model_name": "CustomOdorModel",
-            "state_dict": {
-                key: value.detach().cpu() for key, value in model.state_dict().items()
-            },
+            "state_dict": {key: value.detach().cpu() for key, value in model.state_dict().items()},
             "descriptor_columns": features,
             "morgan_fingerprint_columns": fingerprint_columns,
             "morgan_radius": 2,
@@ -731,9 +666,7 @@ def main() -> None:
         CHECKPOINTS / "custom_model.pt",
     )
 
-    print(
-        f"Official DREAM Q2 test Z-score: {test_metrics['dream_challenge_score']:.3f}"
-    )
+    print(f"Official DREAM Q2 test Z-score: {test_metrics['dream_challenge_score']:.3f}")
     print(f"Official test metrics: {METRICS / 'dream_challenge_test_metrics.json'}")
     print(f"Training plots: {PLOTS}")
     print(f"Checkpoints: {CHECKPOINTS}")

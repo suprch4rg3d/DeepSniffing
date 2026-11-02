@@ -56,6 +56,12 @@ DeepSniffing/
 │       ├── scalers/                             Saved preprocessing scalers
 │       └── inspection/                          Generated PNGs (created by dataset_inspector.py; not committed)
 ├── scripts/
+│   ├── core/
+│   │   ├── data.py                             Canonical data loading and the target definitions
+│   │   ├── metrics.py                          Official DREAM Q2 scoring
+│   │   ├── splits.py                           Canonical train/validation/test assignment
+│   │   ├── train.py                            Shared training loop with early stopping
+│   │   └── plots.py                            Figures produced by a training run
 │   ├── data/
 │   │   └── prepare_data.py                     Download raw DREAM/Pyrfume data and PubChem properties
 │   ├── preprocessing/
@@ -69,9 +75,11 @@ DeepSniffing/
 │   │   ├── target_scaler.py                    Fit the DREAM target scaler
 │   │   └── smiles_tokenizer.py                 Tokenize canonical SMILES
 │   └── training/
-│       ├── custom_model.py                     Train the SMILES CNN, descriptor, and Morgan model
-│       ├── cnn.py                              CNN training template
-│       └── transformer.py                      Transformer training template
+│       ├── custom_model.py                     SMILES CNN, descriptor, and Morgan hybrid model
+│       ├── predict.py                          Score novel SMILES strings
+│       ├── run_experiments.py                  Ablation matrix across models and input branches
+│       ├── cnn.py                              SMILES-only CNN baseline (not implemented yet)
+│       └── transformer.py                      Transformer baseline (not implemented yet)
 ├── output/custom_model/
 │   ├── checkpoints/                            Trained model, vocabulary, and fitted scalers
 │   ├── plots/                                  Training and metric comparison PNGs
@@ -82,6 +90,7 @@ DeepSniffing/
 │   ├── official_testset_reference_score.json   Calculated reference metrics
 │   ├── published_challenge_scores.json         Published DREAM benchmark scores
 │   └── official_scoring/                       Organizer Q2 scorer and submission validator
+├── tests/                                      Pytest suite for the data contract and scoring
 ├── docs/
 │   └── mai642_project_proposal.md              Course project proposal
 ├── pyproject.toml                              Poetry project and dependency configuration
@@ -125,12 +134,13 @@ pip install -r requirements.txt
 
 The repository uses [ruff](https://docs.astral.sh/ruff/) for linting and
 formatting, configured in `pyproject.toml` (line length 100, import sorting
-enabled). It is installed with poetry as a dev dependency. Run both before
-pushing:
+enabled). Ruff and pytest are installed with poetry as dev dependencies. Run
+all three before pushing:
 
 ```bash
 poetry run ruff check .
 poetry run ruff format .
+poetry run pytest
 ```
 
 ## Data

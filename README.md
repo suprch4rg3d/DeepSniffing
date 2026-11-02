@@ -242,6 +242,23 @@ and `output/`. Benchmark reference files and scoring tools are under
 `results/baseline/dream_challenge/`. See those directories for the experiment
 scripts, saved results, and supporting data.
 
+Train the hybrid model, which writes a checkpoint and reports the official
+test score:
+
+```bash
+poetry run python -m scripts.training.custom_model
+```
+
+Score a molecule the model has never seen. The command prints the predicted
+mean and spread for each of the 21 DREAM attributes:
+
+```bash
+poetry run python -m scripts.training.predict --smiles "CC(=O)OC1=CC=CC=C1C(=O)O"
+```
+
+Add `--top 5` to show only the strongest attributes, `--json` for machine
+readable output, or `--smiles-file molecules.txt` to score a list.
+
 To download raw sources without querying PubChem, run:
 
 ```bash

@@ -32,6 +32,7 @@ from scripts.preprocessing.smiles_tokenizer import SmilesTokenizer
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PROCESSED_DIR = PROJECT_ROOT / "data/processed/dream_pyrfume"
 MOLECULES_PATH = PROCESSED_DIR / "molecules_enriched.csv"
+SPLIT_TABLE_PATH = PROCESSED_DIR / "molecule_labels_with_split.csv"
 FINGERPRINTS_PATH = PROCESSED_DIR / "morgan_fingerprints.csv"
 RATINGS_DIR = PROJECT_ROOT / "data/raw/dream-olfaction-prediction/data"
 TRAIN_RATINGS_PATH = RATINGS_DIR / "TrainSet.txt"
@@ -77,6 +78,8 @@ class DatasetBundle:
 
     arrays: dict[str, tuple[torch.Tensor, ...]]
     raw_targets: dict[str, np.ndarray]
+    train_cids: list[int]
+    validation_cids: list[int]
     test_cids: list[int]
     tokenizer: SmilesTokenizer
     feature_scaler: StandardScaler
@@ -280,6 +283,8 @@ def prepare_data() -> DatasetBundle:
     return DatasetBundle(
         arrays=arrays,
         raw_targets=raw_targets,
+        train_cids=frames["train"]["CID"].astype(int).tolist(),
+        validation_cids=frames["validation"]["CID"].astype(int).tolist(),
         test_cids=test_cids,
         tokenizer=tokenizer,
         feature_scaler=feature_scaler,

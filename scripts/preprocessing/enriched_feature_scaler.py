@@ -1,3 +1,9 @@
+"""Standardise the RDKit descriptor columns.
+
+The training pipeline fits its own scalers on the training split. This module
+stays in use because it is the shared definition of the descriptor column order.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path

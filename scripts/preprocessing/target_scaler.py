@@ -1,3 +1,11 @@
+"""Standardise the molecule level DREAM target columns for inspection.
+
+The training pipeline does not consume this artifact. It derives the official
+challenge targets from the raw high intensity ratings and fits its own scaler on
+the training split, because the DREAM score is defined on per subject means and
+standard deviations rather than on the molecule level averages stored here.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path

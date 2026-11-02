@@ -142,6 +142,10 @@ missing DREAM and Pyrfume files, then fetches PubChem compound properties. It
 skips source files that are already present and reuses previously fetched
 PubChem records.
 
+Scripts are executed as modules from the repository root, which is why every
+command below uses `python -m`. Running a file path directly, such as
+`python scripts/data/prepare_data.py`, does not resolve the `scripts` package.
+
 The commands are written for macOS/Linux; on Windows the same commands work
 unchanged in PowerShell or cmd.
 
@@ -149,12 +153,12 @@ If the processed datasets are already included in the repository, you can use
 them directly and skip rebuilding.
 
 ```bash
-poetry run python scripts/data/prepare_data.py
-poetry run python scripts/preprocessing/dream_dataset.py
-poetry run python scripts/preprocessing/morgan_fingerprints.py
-poetry run python scripts/preprocessing/split_dataset.py
-poetry run python scripts/preprocessing/dataset_inspector.py
-poetry run python scripts/preprocessing/target_scaler.py
+poetry run python -m scripts.data.prepare_data
+poetry run python -m scripts.preprocessing.dream_dataset
+poetry run python -m scripts.preprocessing.morgan_fingerprints
+poetry run python -m scripts.preprocessing.split_dataset
+poetry run python -m scripts.preprocessing.dataset_inspector
+poetry run python -m scripts.preprocessing.target_scaler
 ```
 
 The scripts create:
@@ -185,11 +189,11 @@ separate enriched dataset, run these additional commands after the base
 `dream_dataset.py` step:
 
 ```bash
-poetry run python scripts/preprocessing/enrich_molecules.py
-poetry run python scripts/preprocessing/split_dataset.py
-poetry run python scripts/preprocessing/dataset_inspector.py
-poetry run python scripts/preprocessing/feature_scaler.py
-poetry run python scripts/preprocessing/enriched_feature_scaler.py
+poetry run python -m scripts.preprocessing.enrich_molecules
+poetry run python -m scripts.preprocessing.split_dataset
+poetry run python -m scripts.preprocessing.dataset_inspector
+poetry run python -m scripts.preprocessing.feature_scaler
+poetry run python -m scripts.preprocessing.enriched_feature_scaler
 ```
 
 This creates `molecules_enriched.csv`, then
@@ -241,7 +245,7 @@ scripts, saved results, and supporting data.
 To download raw sources without querying PubChem, run:
 
 ```bash
-poetry run python scripts/data/prepare_data.py --download-only
+poetry run python -m scripts.data.prepare_data --download-only
 ```
 
 Use `--force-download` with `prepare_data.py` to redownload the DREAM and

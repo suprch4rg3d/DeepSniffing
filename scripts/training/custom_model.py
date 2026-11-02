@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import random
 import re
-import sys
 from pathlib import Path
 
 import joblib
@@ -16,11 +15,10 @@ from sklearn.preprocessing import StandardScaler
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
+from scripts.preprocessing.enriched_feature_scaler import ENRICHED_FEATURE_COLUMNS
+from scripts.preprocessing.smiles_tokenizer import SmilesTokenizer
 
-from scripts.preprocessing.enriched_feature_scaler import ENRICHED_FEATURE_COLUMNS  # noqa: E402
-from scripts.preprocessing.smiles_tokenizer import SmilesTokenizer  # noqa: E402
+ROOT = Path(__file__).resolve().parents[2]
 
 DATA = ROOT / "data/processed/dream_pyrfume/molecules_enriched.csv"
 MORGAN_FINGERPRINTS = ROOT / "data/processed/dream_pyrfume/morgan_fingerprints.csv"

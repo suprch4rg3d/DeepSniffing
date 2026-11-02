@@ -51,7 +51,15 @@ HEAD_HIDDEN_SIZE = 64
 
 
 class CustomOdorModel(nn.Module):
-    """Multi branch regressor producing 21 means and 21 standard deviations."""
+    """Multi branch regressor producing 21 means and 21 standard deviations.
+
+    Branches can be switched off, which is how the ablation matrix measures the
+    contribution of each input representation. A disabled branch still exists in
+    the module, but its output is multiplied by zero, so no information from that
+    input can reach the head.
+    """
+
+    BRANCHES = ("smiles", "descriptors", "fingerprints")
 
     def __init__(
         self,
@@ -59,8 +67,15 @@ class CustomOdorModel(nn.Module):
         feature_count: int,
         fingerprint_count: int,
         target_count: int,
+        branches: frozenset[str] | set[str] | None = None,
     ):
         super().__init__()
+        self.branches = frozenset(branches or self.BRANCHES)
+        unknown = self.branches.difference(self.BRANCHES)
+        if unknown:
+            raise ValueError(f"Unknown model branches: {sorted(unknown)}")
+        if not self.branches:
+            raise ValueError("At least one model branch must stay enabled.")
         self.embedding = nn.Embedding(vocab_size, EMBEDDING_SIZE, padding_idx=0)
         self.smiles_cnn = nn.Sequential(
             nn.Conv1d(EMBEDDING_SIZE, CONV_FILTERS[0], kernel_size=KERNEL_SIZE, padding=1),
@@ -101,18 +116,24 @@ class CustomOdorModel(nn.Module):
         smiles_features = (convolved * mask).sum(dim=2) / mask.sum(dim=2).clamp(min=1)
         descriptor_features = self.descriptor_branch(features)
         morgan_features = self.morgan_branch(fingerprints)
+        smiles_features = smiles_features * float("smiles" in self.branches)
+        descriptor_features = descriptor_features * float("descriptors" in self.branches)
+        morgan_features = morgan_features * float("fingerprints" in self.branches)
         return self.output(
             torch.cat((smiles_features, descriptor_features, morgan_features), dim=1)
         )
 
 
-def build_model(bundle: DatasetBundle) -> CustomOdorModel:
+def build_model(
+    bundle: DatasetBundle, branches: frozenset[str] | set[str] | None = None
+) -> CustomOdorModel:
     """Instantiate the hybrid model with the shapes implied by a dataset bundle."""
     return CustomOdorModel(
         vocab_size=bundle.vocab_size,
         feature_count=bundle.feature_count,
         fingerprint_count=bundle.fingerprint_count,
         target_count=bundle.target_count,
+        branches=branches,
     )
 
 

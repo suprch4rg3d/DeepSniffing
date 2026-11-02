@@ -56,6 +56,41 @@ def training_pool_cids() -> list[int]:
     return sorted({int(cid) for cid in cids})
 
 
+def ordered_split_cids(
+    cids: list[int] | np.ndarray,
+    *,
+    validation_fraction: float = VALIDATION_FRACTION,
+    seed: int = RANDOM_SEED,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return train and validation identifiers in shuffled order.
+
+    Training order matters, because the data loader shuffles batches starting
+    from the row order of the dataset. Keeping one implementation of the split
+    means models trained by different scripts see identical batches.
+    """
+    usable = usable_training_cids(cids)
+    if usable.size == 0:
+        return np.array([], dtype="int64"), np.array([], dtype="int64")
+    train_cids, validation_cids = train_test_split(
+        usable,
+        test_size=validation_fraction,
+        random_state=seed,
+        shuffle=True,
+    )
+    return train_cids, validation_cids
+
+
+def usable_training_cids(cids: list[int] | np.ndarray) -> np.ndarray:
+    """Identifiers that may be trained on, meaning rated and not held out."""
+    molecules = sorted({int(cid) for cid in cids})
+    test_cids = set(official_test_cids())
+    pool_cids = set(training_pool_cids())
+    return np.array(
+        [cid for cid in molecules if cid in pool_cids and cid not in test_cids],
+        dtype="int64",
+    )
+
+
 def assign_splits(
     cids: list[int] | np.ndarray,
     *,
@@ -84,16 +119,9 @@ def assign_splits(
             f"molecules into training: {sorted(leaked)[:5]}"
         )
 
-    usable = np.array([cid for cid in molecules if cid in pool_cids and cid not in test_cids])
-    train_cids: list[int] = []
-    validation_cids: list[int] = []
-    if usable.size:
-        train_cids, validation_cids = train_test_split(
-            usable,
-            test_size=validation_fraction,
-            random_state=seed,
-            shuffle=True,
-        )
+    train_cids, validation_cids = ordered_split_cids(
+        molecules, validation_fraction=validation_fraction, seed=seed
+    )
 
     assignment = {cid: UNUSED for cid in molecules}
     assignment.update({int(cid): TRAIN for cid in train_cids})

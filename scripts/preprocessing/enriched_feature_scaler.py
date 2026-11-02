@@ -1,7 +1,8 @@
 """Standardise the RDKit descriptor columns.
 
-The training pipeline fits its own scalers on the training split. This module
-stays in use because it is the shared definition of the descriptor column order.
+The training pipeline fits its own scalers on the training split, so this
+artifact exists for data inspection only. The descriptor column order itself is
+owned by scripts.core.data.
 """
 
 from __future__ import annotations
@@ -14,29 +15,11 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
+from scripts.core.data import ENRICHED_FEATURE_COLUMNS
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATASET_PATH = PROJECT_ROOT / "data/processed/dream_pyrfume/molecules_enriched_with_split.csv"
 ARTIFACT_PATH = PROJECT_ROOT / "data/processed/dream_pyrfume/scalers/enriched_feature_scaler.joblib"
-
-ENRICHED_FEATURE_COLUMNS = [
-    "rdkit_atom_count_c",
-    "rdkit_atom_count_h",
-    "rdkit_atom_count_n",
-    "rdkit_atom_count_o",
-    "rdkit_atom_count_p",
-    "rdkit_atom_count_s",
-    "rdkit_atom_count_na",
-    "rdkit_atom_count_cl",
-    "rdkit_atom_count_i",
-    "rdkit_heavy_atom_count",
-    "rdkit_aromatic_ring_count",
-    "rdkit_aliphatic_ring_count",
-    "rdkit_rotatable_bond_count",
-    "rdkit_hydrogen_bond_donor_count",
-    "rdkit_hydrogen_bond_acceptor_count",
-    "rdkit_topological_polar_surface_area",
-    "rdkit_mol_logp",
-]
 
 
 def fit_and_save_enriched_feature_scaler(

@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    env:
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Use an in-project virtual environment
+        run: poetry config virtualenvs.in-project true
+
+      - name: Cache the virtual environment
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Check the project metadata
+        run: poetry check
+
+      - name: Lint
+        run: poetry run ruff check .
+
+      - name: Check formatting
+        run: poetry run ruff format --check .
+
+      - name: Test
+        run: poetry run pytest -q

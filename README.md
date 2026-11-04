@@ -56,6 +56,12 @@ DeepSniffing/
 │       ├── scalers/                             Saved preprocessing scalers
 │       └── inspection/                          Generated PNGs (created by dataset_inspector.py; not committed)
 ├── scripts/
+│   ├── core/
+│   │   ├── data.py                             Canonical data loading and the target definitions
+│   │   ├── metrics.py                          Official DREAM Q2 scoring
+│   │   ├── splits.py                           Canonical train/validation/test assignment
+│   │   ├── train.py                            Shared training loop with early stopping
+│   │   └── plots.py                            Figures produced by a training run
 │   ├── data/
 │   │   └── prepare_data.py                     Download raw DREAM/Pyrfume data and PubChem properties
 │   ├── preprocessing/
@@ -69,9 +75,11 @@ DeepSniffing/
 │   │   ├── target_scaler.py                    Fit the DREAM target scaler
 │   │   └── smiles_tokenizer.py                 Tokenize canonical SMILES
 │   └── training/
-│       ├── custom_model.py                     Train the SMILES CNN, descriptor, and Morgan model
-│       ├── cnn.py                              CNN training template
-│       └── transformer.py                      Transformer training template
+│       ├── custom_model.py                     SMILES CNN, descriptor, and Morgan hybrid model
+│       ├── predict.py                          Score novel SMILES strings
+│       ├── run_experiments.py                  Ablation matrix across models and input branches
+│       ├── cnn.py                              SMILES-only CNN baseline (not implemented yet)
+│       └── transformer.py                      Transformer baseline (not implemented yet)
 ├── output/custom_model/
 │   ├── checkpoints/                            Trained model, vocabulary, and fitted scalers
 │   ├── plots/                                  Training and metric comparison PNGs
@@ -82,6 +90,7 @@ DeepSniffing/
 │   ├── official_testset_reference_score.json   Calculated reference metrics
 │   ├── published_challenge_scores.json         Published DREAM benchmark scores
 │   └── official_scoring/                       Organizer Q2 scorer and submission validator
+├── tests/                                      Pytest suite for the data contract and scoring
 ├── docs/
 │   └── mai642_project_proposal.md              Course project proposal
 ├── pyproject.toml                              Poetry project and dependency configuration
@@ -125,13 +134,36 @@ pip install -r requirements.txt
 
 The repository uses [ruff](https://docs.astral.sh/ruff/) for linting and
 formatting, configured in `pyproject.toml` (line length 100, import sorting
-enabled). It is installed with poetry as a dev dependency. Run both before
-pushing:
+enabled). Ruff and pytest are installed with poetry as dev dependencies. Run
+all three before pushing:
 
 ```bash
 poetry run ruff check .
 poetry run ruff format .
+poetry run pytest
 ```
+
+### Available commands
+
+`poetry install` registers these console scripts. They run from any directory,
+and each one is a thin wrapper around a module under `scripts/`. With plain pip
+instead of Poetry, call the modules directly, for example
+`python -m scripts.training.predict`.
+
+| Command | Purpose |
+|---|---|
+| `ds-prepare` | Download DREAM and Pyrfume sources, fetch PubChem properties |
+| `ds-dataset` | Build the molecule table and the DREAM rating table |
+| `ds-fingerprints` | Generate radius-2, 2048-bit Morgan fingerprints |
+| `ds-enrich` | Add the RDKit descriptor columns |
+| `ds-split` | Assign the canonical train, validation, and test split |
+| `ds-inspect` | Write dataset summary plots and coverage reports |
+| `ds-scale-features` | Fit the base feature scaler |
+| `ds-scale-enriched` | Fit the descriptor scaler |
+| `ds-scale-targets` | Fit the molecule-level target scaler |
+| `ds-train` | Train the hybrid model and report the DREAM score |
+| `ds-predict` | Score novel SMILES strings |
+| `ds-experiments` | Run the ablation matrix |
 
 ## Data
 
@@ -142,6 +174,10 @@ missing DREAM and Pyrfume files, then fetches PubChem compound properties. It
 skips source files that are already present and reuses previously fetched
 PubChem records.
 
+The commands below are Poetry console scripts, installed with `poetry install`
+and runnable from any directory. The module form works as well, for example
+`poetry run python -m scripts.data.prepare_data`.
+
 The commands are written for macOS/Linux; on Windows the same commands work
 unchanged in PowerShell or cmd.
 
@@ -149,12 +185,12 @@ If the processed datasets are already included in the repository, you can use
 them directly and skip rebuilding.
 
 ```bash
-poetry run python scripts/data/prepare_data.py
-poetry run python scripts/preprocessing/dream_dataset.py
-poetry run python scripts/preprocessing/morgan_fingerprints.py
-poetry run python scripts/preprocessing/split_dataset.py
-poetry run python scripts/preprocessing/dataset_inspector.py
-poetry run python scripts/preprocessing/target_scaler.py
+poetry run ds-prepare
+poetry run ds-dataset
+poetry run ds-fingerprints
+poetry run ds-split
+poetry run ds-inspect
+poetry run ds-scale-targets
 ```
 
 The scripts create:
@@ -168,8 +204,10 @@ The scripts create:
 - `data/processed/dream_pyrfume/dream_ratings_with_smiles.csv` — DREAM rating
   rows joined to molecule information.
 - `data/processed/dream_pyrfume/molecule_labels_with_split.csv` — the base
-  molecule dataset with reproducible 70/15/15 train, validation, and test
-  splits (random seed 42).
+  molecule dataset with the canonical split. The test split is the official
+  DREAM test set of 69 compounds and is never sampled. Train and validation
+  are drawn from the 338 compounds that carry training ratings, at roughly
+  85/15 with seed 42, and the remaining compounds are labelled `unused`.
 - `data/processed/dream_pyrfume/inspection/base/` — PNG plots for the base
   dataset.
 
@@ -185,11 +223,11 @@ separate enriched dataset, run these additional commands after the base
 `dream_dataset.py` step:
 
 ```bash
-poetry run python scripts/preprocessing/enrich_molecules.py
-poetry run python scripts/preprocessing/split_dataset.py
-poetry run python scripts/preprocessing/dataset_inspector.py
-poetry run python scripts/preprocessing/feature_scaler.py
-poetry run python scripts/preprocessing/enriched_feature_scaler.py
+poetry run ds-enrich
+poetry run ds-split
+poetry run ds-inspect
+poetry run ds-scale-features
+poetry run ds-scale-enriched
 ```
 
 This creates `molecules_enriched.csv`, then
@@ -238,14 +276,31 @@ and `output/`. Benchmark reference files and scoring tools are under
 `results/baseline/dream_challenge/`. See those directories for the experiment
 scripts, saved results, and supporting data.
 
+Train the hybrid model, which writes a checkpoint and reports the official
+test score:
+
+```bash
+poetry run ds-train
+```
+
+Score a molecule the model has never seen. The command prints the predicted
+mean and spread for each of the 21 DREAM attributes:
+
+```bash
+poetry run ds-predict --smiles "CC(=O)OC1=CC=CC=C1C(=O)O"
+```
+
+Add `--top 5` to show only the strongest attributes, `--json` for machine
+readable output, or `--smiles-file molecules.txt` to score a list.
+
 To download raw sources without querying PubChem, run:
 
 ```bash
-poetry run python scripts/data/prepare_data.py --download-only
+poetry run ds-prepare --download-only
 ```
 
-Use `--force-download` with `prepare_data.py` to redownload the DREAM and
-Pyrfume source files.
+Use `--force-download` with `ds-prepare` to redownload the DREAM and Pyrfume
+source files.
 
 ## Glossary
 

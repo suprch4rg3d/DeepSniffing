@@ -1,3 +1,9 @@
+"""Standardise the base molecule feature columns.
+
+The training pipeline fits its own scalers on the training split, so this
+artifact exists for data inspection only.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path

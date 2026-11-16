@@ -52,6 +52,17 @@ OFFICIAL_NULL_SD = {
 }
 
 
+SUBJECT_COUNT = 49
+
+# Standard deviations of the Subchallenge 1 null model, from the official scoring
+# script. Subchallenge 1 predicts every participant's own rating.
+OFFICIAL_Q1_NULL_SD = {
+    "intensity": 0.018728962,
+    "valence": 0.01759068,
+    "descriptors": 0.00424504,
+}
+
+
 def normalize_target_name(name: str) -> str:
     """Normalise a DREAM attribute label to the internal snake case form."""
     return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
@@ -117,6 +128,48 @@ def dream_challenge_metrics(actual: np.ndarray, predicted: np.ndarray) -> dict:
     }
 
 
+def dream_challenge_1_metrics(actual: np.ndarray, predicted: np.ndarray) -> dict:
+    """Score person by person predictions with the Subchallenge 1 formula.
+
+    Both arrays are shaped (molecules, 21 attributes, 49 participants). A rating that a
+    participant did not give is NaN in ``actual`` and is left out of that participant's
+    correlation. Correlations are averaged per score group over every attribute and
+    participant, and then divided by the null model's standard deviation.
+    """
+    actual = np.asarray(actual, dtype=np.float64)
+    predicted = np.asarray(predicted, dtype=np.float64)
+    if actual.shape != predicted.shape or actual.shape[1:] != (TARGET_COUNT, SUBJECT_COUNT):
+        raise ValueError(
+            "DREAM Q1 scoring expects arrays shaped (molecules, 21 attributes, 49 participants)."
+        )
+
+    groups = {
+        "intensity": range(0, 1),
+        "valence": range(1, 2),
+        "descriptors": range(2, TARGET_COUNT),
+    }
+    correlations = {
+        name: float(
+            np.mean(
+                [
+                    pearson_across_molecules(
+                        actual[:, attribute, subject], predicted[:, attribute, subject]
+                    )
+                    for attribute in attributes
+                    for subject in range(SUBJECT_COUNT)
+                ]
+            )
+        )
+        for name, attributes in groups.items()
+    }
+    z_scores = {name: correlations[name] / OFFICIAL_Q1_NULL_SD[name] for name in correlations}
+    return {
+        "pearson_correlations": correlations,
+        "z_scores": z_scores,
+        "dream_challenge_score": float(np.mean(list(z_scores.values()))),
+    }
+
+
 def prediction_matrix_from_submission(path: Path, cids: list[int]) -> np.ndarray:
     """Load an official DREAM submission file as a 21 + 21 prediction matrix."""
     submission = pd.read_csv(path, sep="\t")
@@ -143,3 +196,24 @@ def write_metrics(path: Path, metrics: dict) -> None:
     """Write a metrics dictionary as indented JSON."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+
+
+def prediction_frame(cids: list[int], predictions, targets: list[str]) -> pd.DataFrame:
+    """Format predictions as an official DREAM submission table."""
+    label_by_target = {
+        "intensity_strength": "INTENSITY/STRENGTH",
+        "valence_pleasantness": "VALENCE/PLEASANTNESS",
+        "ammonia_urinous": "AMMONIA/URINOUS",
+    }
+    rows = []
+    for index, cid in enumerate(cids):
+        for target_index, target in enumerate(targets):
+            rows.append(
+                {
+                    "#oID": cid,
+                    "descriptor": label_by_target.get(target, target.upper()),
+                    "value": float(predictions[index, target_index]),
+                    "sigma": float(predictions[index, len(targets) + target_index]),
+                }
+            )
+    return pd.DataFrame(rows)

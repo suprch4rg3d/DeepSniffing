@@ -7,8 +7,11 @@ import pytest
 
 from scripts.core.metrics import (
     OFFICIAL_NULL_SD,
+    OFFICIAL_Q1_NULL_SD,
+    SUBJECT_COUNT,
     TARGET_COUNT,
     TARGETS,
+    dream_challenge_1_metrics,
     dream_challenge_metrics,
     pearson_across_molecules,
     prediction_matrix_from_submission,
@@ -89,17 +92,61 @@ def test_pearson_rejects_shape_mismatch():
         pearson_across_molecules(np.zeros(3), np.zeros(4))
 
 
-def test_submission_loader_reads_the_reference_file(bundle):
+def test_submission_loader_reads_the_reference_file():
     from scripts.core.data import REFERENCE_PREDICTIONS_PATH
+    from scripts.core.splits import official_test_cids
 
-    matrix = prediction_matrix_from_submission(REFERENCE_PREDICTIONS_PATH, bundle.test_cids)
+    test_cids = official_test_cids()
+    matrix = prediction_matrix_from_submission(REFERENCE_PREDICTIONS_PATH, test_cids)
 
-    assert matrix.shape == (len(bundle.test_cids), TARGET_COUNT * 2)
+    assert matrix.shape == (len(test_cids), TARGET_COUNT * 2)
     assert np.isfinite(matrix).all()
 
 
-def test_submission_loader_rejects_unknown_cids(bundle):
+def test_submission_loader_rejects_unknown_cids():
     from scripts.core.data import REFERENCE_PREDICTIONS_PATH
+    from scripts.core.splits import official_test_cids
 
     with pytest.raises(ValueError):
-        prediction_matrix_from_submission(REFERENCE_PREDICTIONS_PATH, bundle.test_cids[:-1])
+        prediction_matrix_from_submission(REFERENCE_PREDICTIONS_PATH, official_test_cids()[:-1])
+
+
+# Subchallenge 1 scores every participant's own rating.
+def q1_ratings(seed: int = 0, molecules: int = 30) -> np.ndarray:
+    generator = np.random.default_rng(seed)
+    ratings = generator.uniform(0, 100, size=(molecules, TARGET_COUNT, SUBJECT_COUNT))
+    ratings[generator.random(ratings.shape) < 0.3] = np.nan
+    return ratings
+
+
+def test_q1_perfect_predictions_earn_the_maximum_correlation():
+    actual = q1_ratings()
+    predicted = np.where(np.isnan(actual), 50.0, actual)
+
+    metrics = dream_challenge_1_metrics(actual, predicted)
+
+    assert all(np.isclose(value, 1.0) for value in metrics["pearson_correlations"].values())
+    expected = np.mean([1.0 / sd for sd in OFFICIAL_Q1_NULL_SD.values()])
+    assert np.isclose(metrics["dream_challenge_score"], expected)
+    assert list(metrics["z_scores"]) == ["intensity", "valence", "descriptors"]
+
+
+def test_q1_ignores_ratings_that_were_never_given():
+    actual = q1_ratings(1)
+    first = np.where(np.isnan(actual), 10.0, actual)
+    second = np.where(np.isnan(actual), 90.0, actual)
+
+    assert dream_challenge_1_metrics(actual, first) == dream_challenge_1_metrics(actual, second)
+
+
+def test_q1_constant_predictions_score_zero():
+    metrics = dream_challenge_1_metrics(
+        q1_ratings(2), np.full((30, TARGET_COUNT, SUBJECT_COUNT), 40.0)
+    )
+
+    assert metrics["dream_challenge_score"] == 0.0
+
+
+def test_q1_rejects_arrays_with_the_wrong_shape():
+    with pytest.raises(ValueError, match="21 attributes, 49 participants"):
+        dream_challenge_1_metrics(np.zeros((5, 42)), np.zeros((5, 42)))

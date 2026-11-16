@@ -1,0 +1,18 @@
+{
+  "validation": {
+    "intensity_mean": 5.615010362913516,
+    "valence_mean": 5.356171534457137,
+    "descriptors_mean": 21.98351436948583
+  },
+  "test": {
+    "intensity_mean": 5.920173014588716,
+    "valence_mean": 5.194013362046356,
+    "descriptors_mean": 20.212733302852982
+  },
+  "full_q2_test": {
+    "intensity_mean": 6.69,
+    "valence_mean": 5.45,
+    "descriptors_mean": 21.25
+  },
+  "epochs": 33
+}

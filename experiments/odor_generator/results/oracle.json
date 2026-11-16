@@ -1,0 +1,7 @@
+{
+  "train_molecules": 3877,
+  "validation_auc": 0.8902234457630502,
+  "test_auc": 0.8669703040617355,
+  "dream_molecules_auc": 0.8756817888478035,
+  "epochs": 40
+}

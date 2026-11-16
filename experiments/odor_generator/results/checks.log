@@ -1,0 +1,12 @@
+PASS  SELFIES round trip is lossless for every molecule  (8021 molecules, 0 changed)
+PASS  every training molecule fits the decoder  {'train': '7120/7120', 'validation': '215/215', 'test': '215/215', 'dream': '471/471'}
+PASS  example layout is <bos> words <sep> molecule <eos>, with words from the molecule's own list  ['<bos>', '<sweet>', '<sep>', '[C]', '[#C]', '[C]']
+PASS  decoding the molecule part of an example gives the molecule back  
+PASS  causal: predictions before position 20 do not depend on later tokens  max change 0.00e+00
+PASS  causal: predictions after position 20 do change  
+PASS  padding on the right does not change the predictions of the real tokens  max change 0.00e+00
+PASS  held-out molecules are easier to write when their own odor words are given  (loss per token 0.769 with the words, 0.859 without)
+PASS  written sequences end with <eos> before the length limit  (200/200 ended, median length 17 symbols)
+PASS  every written sequence decodes to a valid molecule  
+
+10 of 10 checks passed

@@ -1,0 +1,19 @@
+chemistry without a request: {'valid': 1.0, 'unique': 0.97, 'new': 0.7757731958762887}
+fruity           oracle 0.51 against 0.22 without a request; substructure 0.5225 against 0.225
+alliaceous       oracle 0.31 against 0.01 without a request; substructure 0.94 against 0.05375
+sulfurous        oracle 0.62 against 0.03 without a request; substructure 0.8375 against 0.05375
+garlic;onion     oracle 0.52 against 0.01 without a request; substructure 0.98 against 0.05375
+fishy            oracle 0.21 against 0.03 without a request; substructure 0.575 against 0.255
+buttery          oracle 0.06 against 0.01 without a request; substructure 0.2125 against 0.08875
+floral           oracle 0.39 against 0.19 without a request; substructure None against None
+woody            oracle 0.48 against 0.10 without a request; substructure None against None
+mint             oracle 0.06 against 0.01 without a request; substructure None against None
+smoky;phenolic   oracle 0.22 against 0.03 without a request; substructure None against None
+lemon;citrus     oracle 0.11 against 0.02 without a request; substructure None against None
+cheesy           oracle 0.19 against 0.03 without a request; substructure None against None
+fruity;green     oracle 0.49 against 0.20 without a request; substructure None against None
+sweet;vanilla    oracle 0.30 against 0.13 without a request; substructure None against None
+fatty;waxy       oracle 0.51 against 0.06 without a request; substructure None against None
+green;fresh      oracle 0.32 against 0.14 without a request; substructure None against None
+test {'molecules': 80, 'best_similarity_asking_for_its_own_words': 0.4637735246990234, 'best_similarity_asking_for_other_words': 0.3500245204357563, 'share_above_0.5_own': 0.35, 'share_above_0.5_other': 0.1625, 'oracle_score_of_its_words_own_request': 0.2308353489963338, 'oracle_score_of_its_words_other_request': 0.1275088727386901}
+dream {'molecules': 80, 'best_similarity_asking_for_its_own_words': 0.5626293497223245, 'best_similarity_asking_for_other_words': 0.3522129976983819, 'share_above_0.5_own': 0.5125, 'share_above_0.5_other': 0.1375, 'oracle_score_of_its_words_own_request': 0.19421307099983096, 'oracle_score_of_its_words_other_request': 0.11118277121568099}

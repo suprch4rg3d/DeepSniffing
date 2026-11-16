@@ -1,6 +1,18 @@
+"""``ds-inspect``: check everything that Subchallenge 1 and 2 train on, and plot it.
+
+It runs after ``ds-build``, prints PASS or FAIL for each check, and exits with
+status 1 if any failed, so a broken input is found before a long training and not after it. It checks that the
+split is the DREAM one, that no table of molecules carries a rating, that every DREAM molecule has its features
+and 3D structure, that the feature selection kept something in every block, that the training molecules have
+all 21 targets, and that the scalers match the molecules, the columns and the blend weight of the run.
+
+The plots go to ``data/processed/dream_pyrfume/inspection/``: the split sizes, the distributions and
+correlations of the 21 mean ratings of the training molecules, and the columns kept in each feature block.
+"""
+
 from __future__ import annotations
 
-from pathlib import Path
+import sys
 
 import matplotlib
 
@@ -9,159 +21,180 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATASET_DIR = PROJECT_ROOT / "data/processed/dream_pyrfume"
-BASE_DATASET_PATH = DATASET_DIR / "molecule_labels_with_split.csv"
-ENRICHED_DATASET_PATH = DATASET_DIR / "molecules_enriched_with_split.csv"
-OUTPUT_ROOT = DATASET_DIR / "inspection"
-DREAM_TARGET_PREFIX = "dream_train_mean_"
+from scripts.core.data import (
+    aggregate_high_intensity_targets,
+    load_graph_inputs,
+    load_scalers,
+    training_frames,
+)
+from scripts.core.metrics import TARGETS
+from scripts.core.splits import (
+    PROCESSED_DIR,
+    SPLIT_NAMES,
+    SPLIT_PATH,
+    TRAIN_RATINGS_PATH,
+    load_split,
+)
+from scripts.core.train import Q1_BLEND_ALPHA
+from scripts.preprocessing.community_features import OUTPUT as PUBLISHED_PATH
+from scripts.preprocessing.conformers import OUTPUT as CONFORMERS_PATH
+from scripts.preprocessing.dream_dataset import OUTPUT_PATH as MOLECULES_PATH
+from scripts.preprocessing.enrich_molecules import OUTPUT_PATH as DESCRIPTORS_PATH
+from scripts.preprocessing.feature_selection import MANIFEST_PATH
+
+OUTPUT_DIR = PROCESSED_DIR / "inspection"
+MOLECULE_TABLES = (MOLECULES_PATH, DESCRIPTORS_PATH)
+RATING_PREFIXES = ("label_", "dream_train_", "mean_", "std_")
+EXPECTED_SIZES = {"train": 338, "validation": 69, "test": 69, "unused": 4}
+
+results: list[tuple[str, bool]] = []
 
 
-def inspect_dataset() -> None:
-    enriched_source_exists = (DATASET_DIR / "molecules_enriched.csv").is_file()
-    enriched_split_exists = ENRICHED_DATASET_PATH.is_file()
-    enriched = enriched_source_exists or enriched_split_exists
-    dataset_path = ENRICHED_DATASET_PATH if enriched else BASE_DATASET_PATH
-    output_dir = OUTPUT_ROOT / ("enriched" if enriched else "base")
-    if not dataset_path.is_file():
-        raise FileNotFoundError(f"Split dataset not found: {dataset_path}")
+def check(name: str, passed: bool, detail: str = "") -> None:
+    results.append((name, bool(passed)))
+    print(f"{'PASS' if passed else 'FAIL'}  {name}  {detail}", flush=True)
 
-    dataset = pd.read_csv(dataset_path)
-    required_columns = {"CID", "rdkit_canonical_smiles", "split"}
-    missing_columns = required_columns.difference(dataset.columns)
-    if missing_columns:
-        raise ValueError(
-            f"Dataset is missing required columns: {', '.join(sorted(missing_columns))}"
+
+def run_checks() -> None:
+    split = load_split()  # raises if the file is missing, stale or edited
+    table = pd.read_csv(SPLIT_PATH)
+    sizes = table["split"].value_counts().reindex(SPLIT_NAMES, fill_value=0).to_dict()
+    check("the split is the DREAM split", sizes == EXPECTED_SIZES, str(sizes))
+    check("no molecule is in two splits", not table["CID"].duplicated().any())
+
+    for name in MOLECULE_TABLES:
+        columns = pd.read_csv(name, nrows=0).columns
+        rated = [c for c in columns if c.startswith(RATING_PREFIXES)]
+        check(
+            f"{name.name} carries no rating",
+            not rated,
+            f"({len(columns)} columns)" if not rated else str(rated[:3]),
         )
-    if dataset["CID"].duplicated().any():
-        raise ValueError("Expected one row per CID in the molecule-level dataset.")
-    if not {"train", "validation", "test"}.issubset(set(dataset["split"].dropna())):
-        raise ValueError("Dataset must contain train, validation, and test split assignments.")
 
-    canonical_smiles = dataset["rdkit_canonical_smiles"].fillna("").astype(str).str.strip()
-    dataset = dataset.loc[canonical_smiles.ne("")].copy()
-    target_columns = [
-        column for column in dataset.columns if column.startswith(DREAM_TARGET_PREFIX)
+    molecules = pd.read_csv(DESCRIPTORS_PATH)
+    dream = set(split.train) | set(split.validation) | set(split.test)
+    dragon = [
+        c for c in molecules if c.startswith("dragon_") and c != "dragon_complexity from pubmed"
     ]
-    if len(target_columns) != 21:
-        raise ValueError(f"Expected 21 DREAM mean targets, found {len(target_columns)}.")
-
-    train = dataset.loc[dataset["split"] == "train"]
-    rdkit_feature_columns = []
-    for column in dataset.columns:
-        if column.startswith("rdkit_"):
-            values = pd.to_numeric(dataset[column], errors="coerce")
-            if values.notna().any():
-                rdkit_feature_columns.append(column)
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    split_names = ("train", "validation", "test")
-    split_counts = dataset["split"].value_counts().reindex(split_names, fill_value=0)
-
-    figure, axis = plt.subplots(figsize=(7, 4))
-    bars = axis.bar(
-        split_counts.index, split_counts.values, color=("#386cb0", "#7fc97f", "#fdc086")
+    has_dragon = set(molecules.loc[molecules[dragon].notna().any(axis=1), "CID"])
+    check(
+        "every DREAM molecule has Dragon descriptors",
+        dream <= has_dragon,
+        f"({len(has_dragon)} molecules)",
     )
+    coordinates = set(pd.read_csv(CONFORMERS_PATH, usecols=["CID"])["CID"])
+    without_3d = sorted(int(cid) for cid in dream - coordinates)
+    # PubChem has no 3D structure for a few molecules; their graph then has the bonds only.
+    check(
+        "the DREAM molecules without a PubChem 3D structure are few",
+        len(without_3d) <= 5,
+        f"({len(without_3d)} use bonds only: {without_3d})",
+    )
+    community = set(pd.read_csv(PUBLISHED_PATH, usecols=["CID"])["CID"])
+    check("every DREAM molecule has the published community features", dream <= community)
+
+    manifest = pd.read_csv(MANIFEST_PATH)
+    kept = manifest[manifest["kept"].astype(bool)].groupby("block").size()
+    empty = [b for b in manifest["block"].unique() if kept.get(b, 0) == 0]
+    # the RDKit block can be empty when every column is a copy of a Dragon column
+    check(
+        "the feature selection kept columns in every block",
+        not [b for b in empty if b != "rdkit"],
+        ", ".join(f"{b} {kept.get(b, 0)}" for b in manifest["block"].unique()),
+    )
+
+    targets = aggregate_high_intensity_targets(TRAIN_RATINGS_PATH).set_index("CID")
+    complete = targets.loc[list(split.train)].notna().all().all()
+    check(
+        "the 338 training molecules have all 21 means and 21 spreads",
+        complete,
+        f"({targets.shape[1]} targets)",
+    )
+
+    inputs = load_graph_inputs()
+    for challenge in ("q2", "q1"):
+        frames = training_frames(
+            challenge, inputs, split, Q1_BLEND_ALPHA if challenge == "q1" else None
+        )
+        try:
+            load_scalers(
+                challenge,
+                frames,
+                inputs.dragon_columns,
+                Q1_BLEND_ALPHA if challenge == "q1" else None,
+            )
+            check(f"the scalers match the {challenge.upper()} run", True)
+        except (FileNotFoundError, ValueError) as error:
+            check(f"the scalers match the {challenge.upper()} run", False, str(error))
+
+
+def write_plots() -> None:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    table = pd.read_csv(SPLIT_PATH)
+    counts = table["split"].value_counts().reindex(SPLIT_NAMES, fill_value=0)
+    figure, axis = plt.subplots(figsize=(7, 4))
+    bars = axis.bar(counts.index, counts.values, color=("#386cb0", "#7fc97f", "#fdc086", "#bbbbbb"))
     axis.set_title("Molecules in each split")
     axis.set_ylabel("Molecules")
     axis.bar_label(bars, fmt="%d")
     figure.tight_layout()
-    figure.savefig(output_dir / "split_sizes.png", dpi=160, bbox_inches="tight")
+    figure.savefig(OUTPUT_DIR / "split_sizes.png", dpi=160, bbox_inches="tight")
     plt.close(figure)
 
-    target_coverage = pd.DataFrame(
-        {
-            split_name: dataset.loc[dataset["split"] == split_name, target_columns]
-            .notna()
-            .mean()
-            .mul(100)
-            for split_name in split_names
-        }
-    )
-    target_names = [
-        column.removeprefix(DREAM_TARGET_PREFIX).replace("_", " ").title()
-        for column in target_columns
-    ]
-    figure, axis = plt.subplots(figsize=(7, max(6, 0.32 * len(target_columns))))
-    image = axis.imshow(target_coverage.to_numpy(), cmap="viridis", vmin=0, vmax=100, aspect="auto")
-    axis.set_xticks(range(len(split_names)), labels=[name.title() for name in split_names])
-    axis.set_yticks(range(len(target_names)), labels=target_names)
-    axis.set_title("Observed DREAM target ratings by split")
-    figure.colorbar(image, ax=axis, label="Molecules with rating (%)")
-    figure.tight_layout()
-    figure.savefig(output_dir / "dream_target_coverage_by_split.png", dpi=160, bbox_inches="tight")
-    plt.close(figure)
-
-    column_count = 3
-    row_count = (len(target_columns) + column_count - 1) // column_count
-    figure, axes = plt.subplots(
-        row_count, column_count, figsize=(15, 3.2 * row_count), squeeze=False
-    )
-    for index, column in enumerate(target_columns):
-        axis = axes.flat[index]
-        values = pd.to_numeric(train[column], errors="coerce").dropna()
-        axis.hist(values, bins=20, color="#386cb0", edgecolor="white")
-        axis.set_title(column.removeprefix(DREAM_TARGET_PREFIX).replace("_", " ").title())
+    train = aggregate_high_intensity_targets(TRAIN_RATINGS_PATH).set_index("CID")
+    means = train[[f"mean_{t}" for t in TARGETS]]
+    names = [t.replace("_", " ").title() for t in TARGETS]
+    columns = 3
+    rows = (len(TARGETS) + columns - 1) // columns
+    figure, axes = plt.subplots(rows, columns, figsize=(15, 3.2 * rows), squeeze=False)
+    for axis, name, column in zip(axes.flat, names, means.columns, strict=True):
+        axis.hist(means[column].dropna(), bins=20, color="#386cb0", edgecolor="white")
+        axis.set_title(name)
         axis.set_xlabel("Mean DREAM rating")
         axis.set_ylabel("Molecules")
-    for axis in axes.flat[len(target_columns) :]:
+    for axis in axes.flat[len(TARGETS) :]:
         axis.set_visible(False)
-    figure.suptitle("Training split: DREAM target distributions", fontsize=16, y=0.995)
+    figure.suptitle("Training molecules: distribution of the 21 mean ratings", fontsize=16, y=0.995)
     figure.tight_layout(rect=(0, 0, 1, 0.985))
-    histogram_path = output_dir / "train_dream_target_distributions.png"
-    figure.savefig(histogram_path, dpi=160, bbox_inches="tight")
+    figure.savefig(OUTPUT_DIR / "train_target_distributions.png", dpi=160, bbox_inches="tight")
     plt.close(figure)
 
-    if rdkit_feature_columns:
-        feature_column_count = min(3, len(rdkit_feature_columns))
-        feature_row_count = (
-            len(rdkit_feature_columns) + feature_column_count - 1
-        ) // feature_column_count
-        figure, axes = plt.subplots(
-            feature_row_count,
-            feature_column_count,
-            figsize=(5 * feature_column_count, 3.2 * feature_row_count),
-            squeeze=False,
-        )
-        for index, column in enumerate(rdkit_feature_columns):
-            numeric_values = pd.to_numeric(train[column], errors="coerce")
-            values = numeric_values.dropna()
-            axes.flat[index].hist(values, bins=20, color="#4daf4a", edgecolor="white")
-            coverage = 100 * len(values) / len(train) if len(train) else 0
-            axes.flat[index].set_title(
-                f"{column.removeprefix('rdkit_').replace('_', ' ').title()}\n"
-                f"Available for {coverage:.1f}% of train"
-            )
-            axes.flat[index].set_xlabel("RDKit descriptor value")
-            axes.flat[index].set_ylabel("Molecules")
-        for axis in axes.flat[len(rdkit_feature_columns) :]:
-            axis.set_visible(False)
-        figure.suptitle("Training split: numeric RDKit descriptor distributions", fontsize=15)
-        figure.tight_layout(rect=(0, 0, 1, 0.98))
-        feature_histogram_path = output_dir / "train_rdkit_feature_distributions.png"
-        figure.savefig(feature_histogram_path, dpi=160, bbox_inches="tight")
-        plt.close(figure)
-
-    correlations = train[target_columns].apply(pd.to_numeric, errors="coerce").corr()
     figure, axis = plt.subplots(figsize=(11, 9))
-    image = axis.imshow(correlations, cmap="coolwarm", vmin=-1, vmax=1)
-    axis.set_xticks(range(len(target_columns)))
-    axis.set_yticks(range(len(target_columns)))
-    axis.set_xticklabels(target_names, rotation=60, ha="right")
-    axis.set_yticklabels(target_names)
-    axis.set_title("Training split: DREAM target correlations")
+    image = axis.imshow(means.corr(), cmap="coolwarm", vmin=-1, vmax=1)
+    axis.set_xticks(range(len(names)), labels=names, rotation=60, ha="right")
+    axis.set_yticks(range(len(names)), labels=names)
+    axis.set_title("Training molecules: correlation of the 21 mean ratings")
     figure.colorbar(image, ax=axis, label="Pearson correlation")
     figure.tight_layout()
-    correlation_path = output_dir / "train_dream_target_correlation.png"
-    figure.savefig(correlation_path, dpi=160, bbox_inches="tight")
+    figure.savefig(OUTPUT_DIR / "train_target_correlation.png", dpi=160, bbox_inches="tight")
     plt.close(figure)
 
-    print(f"Saved inspection files under {output_dir}")
+    manifest = pd.read_csv(MANIFEST_PATH)
+    summary = manifest.groupby("block")["kept"].agg(kept="sum", candidates="size")
+    figure, axis = plt.subplots(figsize=(9, 4.5))
+    positions = range(len(summary))
+    axis.bar(positions, summary["candidates"], color="#cccccc", label="candidates")
+    axis.bar(positions, summary["kept"], color="#386cb0", label="kept")
+    axis.set_xticks(list(positions), labels=summary.index, rotation=30, ha="right")
+    axis.set_yscale("log")
+    axis.set_ylabel("Columns")
+    axis.set_title("Feature selection: columns kept in each block")
+    axis.legend()
+    figure.tight_layout()
+    figure.savefig(OUTPUT_DIR / "features_kept_by_block.png", dpi=160, bbox_inches="tight")
+    plt.close(figure)
+    print(f"Saved the plots to {OUTPUT_DIR}")
 
 
 def main() -> None:
-    inspect_dataset()
+    run_checks()
+    write_plots()
+    failed = [name for name, passed in results if not passed]
+    print(
+        f"\n{len(results) - len(failed)} of {len(results)} checks passed"
+        + (f"; FAILED: {failed}" if failed else "")
+    )
+    sys.exit(1 if failed else 0)
 
 
 if __name__ == "__main__":

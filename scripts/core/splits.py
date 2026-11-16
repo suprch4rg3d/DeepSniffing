@@ -1,26 +1,34 @@
 """Canonical train, validation, and test assignment for the DREAM task.
 
-The DREAM challenge defines its own test set, so the test split is fixed and
-never sampled. Everything else that has training ratings is split into train and
-validation with a fixed seed. Molecules that never took part in the challenge are
-marked as unused so they cannot leak into training by accident.
+The DREAM challenge defines three molecule sets, and the split follows them: the
+338 TrainSet molecules are the training split, the 69 leaderboard molecules are the
+validation split, and the 69 official test molecules are the test split, which is never
+sampled and never used for training or epoch selection. Molecules without ratings
+that took part in none of these sets are marked as unused so they cannot leak into
+training by accident.
 
-This module is the single source of truth for the split. The materialised CSV
-columns are a view of it, and the tests check that the two always agree.
+This module is the single source of truth for the split. ``ds-build`` writes it to
+``split.csv`` with ``build_split``, and ``ds-train`` reads it back with ``load_split``, which
+checks the file against the DREAM lists again, so a stale or edited file is never trained on.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROCESSED_DIR = PROJECT_ROOT / "data/processed/dream_pyrfume"
 RATINGS_DIR = PROJECT_ROOT / "data/raw/dream-olfaction-prediction/data"
 TRAIN_RATINGS_PATH = RATINGS_DIR / "TrainSet.txt"
+TEST_RATINGS_PATH = RATINGS_DIR / "TestSet.txt"
+LEADERBOARD_RATINGS_PATH = RATINGS_DIR / "LBs1.txt"
 OFFICIAL_TEST_CIDS_PATH = RATINGS_DIR / "CID_testset.txt"
+LEADERBOARD_CIDS_PATH = RATINGS_DIR / "CID_leaderboard.txt"
+SPLIT_PATH = PROCESSED_DIR / "split.csv"
 
 TRAIN = "train"
 VALIDATION = "validation"
@@ -28,7 +36,6 @@ TEST = "test"
 UNUSED = "unused"
 SPLIT_NAMES = (TRAIN, VALIDATION, TEST, UNUSED)
 
-VALIDATION_FRACTION = 0.15
 RANDOM_SEED = 42
 
 
@@ -47,6 +54,11 @@ def official_test_cids() -> list[int]:
     return read_cid_list(OFFICIAL_TEST_CIDS_PATH)
 
 
+def leaderboard_cids() -> list[int]:
+    """Compound identifiers of the DREAM leaderboard set, used here for validation."""
+    return read_cid_list(LEADERBOARD_CIDS_PATH)
+
+
 def training_pool_cids() -> list[int]:
     """Compound identifiers that carry DREAM training ratings."""
     if not TRAIN_RATINGS_PATH.is_file():
@@ -56,34 +68,10 @@ def training_pool_cids() -> list[int]:
     return sorted({int(cid) for cid in cids})
 
 
-def ordered_split_cids(
-    cids: list[int] | np.ndarray,
-    *,
-    validation_fraction: float = VALIDATION_FRACTION,
-    seed: int = RANDOM_SEED,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Return train and validation identifiers in shuffled order.
-
-    Training order matters, because the data loader shuffles batches starting
-    from the row order of the dataset. Keeping one implementation of the split
-    means models trained by different scripts see identical batches.
-    """
-    usable = usable_training_cids(cids)
-    if usable.size == 0:
-        return np.array([], dtype="int64"), np.array([], dtype="int64")
-    train_cids, validation_cids = train_test_split(
-        usable,
-        test_size=validation_fraction,
-        random_state=seed,
-        shuffle=True,
-    )
-    return train_cids, validation_cids
-
-
 def usable_training_cids(cids: list[int] | np.ndarray) -> np.ndarray:
     """Identifiers that may be trained on, meaning rated and not held out."""
     molecules = sorted({int(cid) for cid in cids})
-    test_cids = set(official_test_cids())
+    test_cids = set(official_test_cids()) | set(leaderboard_cids())
     pool_cids = set(training_pool_cids())
     return np.array(
         [cid for cid in molecules if cid in pool_cids and cid not in test_cids],
@@ -91,59 +79,92 @@ def usable_training_cids(cids: list[int] | np.ndarray) -> np.ndarray:
     )
 
 
-def assign_splits(
-    cids: list[int] | np.ndarray,
-    *,
-    validation_fraction: float = VALIDATION_FRACTION,
-    seed: int = RANDOM_SEED,
-) -> dict[int, str]:
+def assign_splits(cids: list[int] | np.ndarray) -> dict[int, str]:
     """Assign every given compound to train, validation, test, or unused.
 
-    The official test set is held out unconditionally. Train and validation are
-    drawn from the molecules that have DREAM training ratings, using the sorted
-    identifier order so the assignment is stable across machines.
+    The official test set is held out unconditionally. Train is every molecule with
+    DREAM training ratings, and validation is the DREAM leaderboard set. The assignment
+    does not depend on the order of the identifiers, so it is stable across machines.
     """
-    if not 0 < validation_fraction < 1:
-        raise ValueError("validation_fraction must be strictly between 0 and 1.")
-
     molecules = sorted({int(cid) for cid in cids})
     if not molecules:
         raise ValueError("No compound identifiers were supplied.")
 
     test_cids = set(official_test_cids())
+    validation_cids = set(leaderboard_cids())
     pool_cids = set(training_pool_cids())
-    leaked = test_cids.intersection(pool_cids)
-    if leaked:
-        raise ValueError(
-            "The official test set overlaps the training pool, which would leak test "
-            f"molecules into training: {sorted(leaked)[:5]}"
-        )
-
-    train_cids, validation_cids = ordered_split_cids(
-        molecules, validation_fraction=validation_fraction, seed=seed
-    )
+    for name, left, right in (
+        ("training pool and the official test set", pool_cids, test_cids),
+        ("leaderboard set and the official test set", validation_cids, test_cids),
+        ("training pool and the leaderboard set", pool_cids, validation_cids),
+    ):
+        leaked = left.intersection(right)
+        if leaked:
+            raise ValueError(
+                f"The {name} overlap, which would leak held-out molecules: {sorted(leaked)[:5]}"
+            )
 
     assignment = {cid: UNUSED for cid in molecules}
-    assignment.update({int(cid): TRAIN for cid in train_cids})
-    assignment.update({int(cid): VALIDATION for cid in validation_cids})
+    assignment.update({cid: TRAIN for cid in pool_cids.intersection(molecules)})
+    assignment.update({cid: VALIDATION for cid in validation_cids.intersection(molecules)})
     assignment.update({cid: TEST for cid in test_cids.intersection(molecules)})
     return assignment
 
 
-def assign_split_column(molecules: pd.DataFrame) -> pd.DataFrame:
-    """Return a copy of the molecule table with a split column attached."""
-    if "CID" not in molecules.columns:
-        raise ValueError("Molecule table has no CID column.")
-    if molecules["CID"].isna().any():
-        raise ValueError("Molecule table contains missing CIDs.")
-    if molecules["CID"].duplicated().any():
-        raise ValueError("Expected one row per CID before assigning splits.")
+def build_split(cids: list[int] | np.ndarray, *, seed: int = RANDOM_SEED) -> pd.DataFrame:
+    """The split table: ``CID``, ``split`` and, for training molecules, ``train_order``.
 
-    cids = pd.to_numeric(molecules["CID"], errors="raise").astype("int64")
-    assignment = assign_splits(cids.to_numpy())
-    result = molecules.copy()
-    result["CID"] = cids
-    result["split"] = result["CID"].map(assignment)
-    if result["split"].isna().any():
-        raise RuntimeError("Failed to assign a split to every molecule.")
-    return result
+    The training order matters, because the data loader shuffles batches starting from the row
+    order of the dataset. It is one fixed permutation of the training molecules, so every model
+    trained from this table sees identical batches.
+    """
+    assignment = assign_splits(cids)
+    order = np.random.RandomState(seed).permutation(usable_training_cids(list(assignment)))
+    table = pd.DataFrame({"CID": sorted(assignment)})
+    table["split"] = table["CID"].map(assignment)
+    table["train_order"] = table["CID"].map(
+        {int(cid): position for position, cid in enumerate(order)}
+    )
+    return table
+
+
+@dataclass(frozen=True)
+class Split:
+    """The molecules of each split, as ``split.csv`` lists them. Training is in its fixed order."""
+
+    train: np.ndarray
+    validation: np.ndarray
+    test: np.ndarray
+
+
+def load_split(path: Path = SPLIT_PATH) -> Split:
+    """Read ``split.csv`` and check it against the DREAM lists, so a stale file is never used."""
+    if not path.is_file():
+        raise FileNotFoundError(f"The split is missing: {path}. Run ds-build.")
+    table = pd.read_csv(path)
+    if not {"CID", "split", "train_order"}.issubset(table.columns):
+        raise ValueError(f"{path.name} needs the columns CID, split and train_order. Run ds-build.")
+    if table["CID"].duplicated().any():
+        raise ValueError(f"{path.name} lists a molecule twice.")
+    unknown = set(table["split"]) - set(SPLIT_NAMES)
+    if unknown:
+        raise ValueError(f"{path.name} has unknown split labels: {sorted(unknown)}")
+
+    members = {name: set(table.loc[table["split"] == name, "CID"]) for name in SPLIT_NAMES}
+    for name, expected in (
+        (TRAIN, training_pool_cids()),
+        (VALIDATION, leaderboard_cids()),
+        (TEST, official_test_cids()),
+    ):
+        if members[name] != set(expected):
+            raise ValueError(f"The {name} split in {path.name} is not the DREAM set. Run ds-build.")
+    ordered = table.loc[table["split"] == TRAIN].sort_values("train_order")
+    if ordered["train_order"].isna().any() or list(ordered["train_order"]) != list(
+        range(len(ordered))
+    ):
+        raise ValueError(f"The training order in {path.name} is not 0 to {len(ordered) - 1}.")
+    return Split(
+        train=ordered["CID"].to_numpy(dtype="int64"),
+        validation=np.array(sorted(members[VALIDATION]), dtype="int64"),
+        test=np.array(sorted(members[TEST]), dtype="int64"),
+    )

@@ -24,16 +24,11 @@ dependencies = [
 [project.scripts]
 # Data acquisition and preprocessing
 ds-prepare = "scripts.data.prepare_data:main"
-ds-dataset = "scripts.preprocessing.dream_dataset:main"
-ds-fingerprints = "scripts.preprocessing.morgan_fingerprints:main"
-ds-enrich = "scripts.preprocessing.enrich_molecules:main"
-ds-split = "scripts.preprocessing.split_dataset:main"
+ds-build = "scripts.preprocessing.enrich_molecules:main"
 ds-inspect = "scripts.preprocessing.dataset_inspector:main"
-ds-scale-features = "scripts.preprocessing.feature_scaler:main"
-ds-scale-enriched = "scripts.preprocessing.enriched_feature_scaler:main"
-ds-scale-targets = "scripts.preprocessing.target_scaler:main"
 # Training and evaluation
-ds-train = "scripts.training.custom_model:main"
+ds-train = "scripts.core.train:main"
+ds-plot = "scripts.core.plots:main"
 ds-predict = "scripts.training.predict:main"
 ds-experiments = "scripts.training.run_experiments:main"
 

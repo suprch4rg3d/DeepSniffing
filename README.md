@@ -7,104 +7,108 @@ Semester project for MAI642 — Deep Learning.
 
 ## Project overview
 
-DeepSniffing explores whether a molecule's chemical structure can help predict
-how people perceive its odor. It is a team project for MAI642 — Deep Learning.
+DeepSniffing predicts how people perceive the smell of a molecule from its chemical structure. It is a team
+project for MAI642 — Deep Learning (Emmanouil Oikonomou, Konstantin Krasovitskiy, Anastasia Kyriakou).
 
-The project uses molecule structures and human odor ratings from the DREAM
-Olfaction Prediction Challenge, together with molecule information from
-Pyrfume and PubChem. RDKit is used to parse structures and calculate chemical
-features.
+The data is the DREAM Olfaction Prediction Challenge: 476 molecules, each rated by 49 people on 21 attributes
+(intensity, pleasantness and 19 odor descriptors such as garlic, fruit and fish). Molecule information comes from
+Pyrfume and PubChem, and RDKit parses the structures and calculates chemical features. There are two tasks:
 
-The prediction task covers 21 DREAM attributes: odor intensity, pleasantness,
-and 19 odor descriptors. The project compares ways to represent molecules,
-including canonical SMILES, calculated RDKit descriptors, and Morgan
-fingerprints. Models are evaluated with the DREAM challenge scoring method so
-their results can be compared with released benchmark results.
+- **Subchallenge 1** predicts what each of the 49 participants would rate.
+- **Subchallenge 2** predicts the panel's mean rating and how much people disagree (the spread).
 
-The repository contains scripts for preparing and inspecting data, generating
-molecular features, training models, and reviewing results. Model results
-should be considered alongside the split and evaluation method used in each
-experiment.
+One neural network for each task, trained on the challenge data only, is scored with the official DREAM Z-score, so
+the results compare directly with the published ones.
 
-## Project state
+| | test score | published winner |
+|---|---:|---:|
+| Subchallenge 1 | 34.52 | 34.18 |
+| Subchallenge 2 | 10.05 | 8.87 |
 
-The repository contains the data preparation pipeline, molecular feature
-generation scripts, model training code, and DREAM benchmark references.
+## Where to read more
+
+- `PIPELINE.md`: the commands in order, what each reads and writes, and how a model is trained.
+- `Q1_SETUP.md` and `Q2_SETUP.md`: the setup of each model and how it was reached.
+- `RESULTS.md`: the scores, what helped, what did not, and how reliable the numbers are.
+- `PROJECT_SCOPE.md`: what the project covers.
 
 ## Repository layout
 
 ```
 DeepSniffing/
 ├── data/
-│   ├── raw/
+│   ├── raw/                                        Downloaded by ds-prepare
 │   │   ├── dream-olfaction-prediction/data/
-│   │   │   ├── TrainSet.txt, TestSet.txt       DREAM ratings for training and test
-│   │   │   ├── CID_* and dilution_*            DREAM challenge molecule lists
-│   │   ├── pyrfume-data/
-│   │   │   ├── keller_2016/molecules.csv       Keller molecule metadata
-│   │   │   ├── molecules/molecules.csv         Pyrfume molecule metadata
-│   │   │   └── prediction_targets/keller_2016.csv  Keller odor ratings
-│   │   └── pubchem/
-│   │       └── dream_keller_compound_properties.csv  PubChem properties and source SMILES
-│   └── processed/dream_pyrfume/
-│       ├── molecule_labels.csv                 Base molecule-level dataset
-│       ├── dream_ratings_with_smiles.csv       DREAM ratings joined with molecule data
-│       ├── molecule_labels_with_split.csv      Base dataset with train/validation/test split
-│       ├── morgan_fingerprints.csv              2048-bit Morgan fingerprints keyed by CID
-│       ├── molecules_enriched.csv              Base molecules plus RDKit descriptors
-│       ├── molecules_enriched_with_split.csv   Enriched dataset with split
-│       ├── scalers/                             Saved preprocessing scalers
-│       └── inspection/                          Generated PNGs (created by dataset_inspector.py; not committed)
+│   │   │   ├── TrainSet.txt, TestSet.txt           DREAM ratings for training and test
+│   │   │   ├── LBs1.txt, LBs2.txt                  DREAM leaderboard ratings (validation)
+│   │   │   ├── CID_* and dilution_*                DREAM challenge molecule lists
+│   │   │   ├── molecular_descriptors_data.txt      The published Dragon descriptors
+│   │   │   ├── DREAM_episuite_descriptors.txt      EPI Suite property estimates
+│   │   │   ├── morgan_sim.csv                      Morgan similarity to reference odorants
+│   │   │   ├── name_features.txt                   Organizers' 4-letter name windows
+│   │   │   └── derived/nspdk_*                     De Grave's NSPDK vectors and their CIDs
+│   │   ├── dream-olfaction-prediction/hulab/nspdk2.csv   NSPDK substructure features
+│   │   ├── pyrfume-data/                           Keller molecule metadata and ratings
+│   │   └── pubchem/                                PubChem properties and computed 3D structures
+│   ├── processed/dream_pyrfume/                    One table per purpose, each written by one command
+│   │   ├── molecules.csv                           One row per molecule: CID, SMILES, odor name (no ratings)
+│   │   ├── split.csv                               train / validation / test / unused, and the training order
+│   │   ├── morgan_fingerprints.csv                 2,048 Morgan substructure bits
+│   │   ├── pubchem_3d_coordinates.csv              PubChem's 3D position of each heavy atom
+│   │   ├── molecule_descriptors.csv                RDKit and Dragon descriptors and per-atom partial charges
+│   │   ├── published_features.csv                  EPI Suite, name, NSPDK and similarity features
+│   │   ├── feature_selection.csv                   Every candidate column, kept or dropped, and why
+│   │   ├── scalers/                                Feature and target scalers (ds-build)
+│   │   └── inspection/                             Checks' plots (ds-inspect; not committed)
+│   └── reference/dream_challenge/                  Published scores, stored predictions, the official scorer
 ├── scripts/
-│   ├── core/
-│   │   ├── data.py                             Canonical data loading and the target definitions
-│   │   ├── metrics.py                          Official DREAM Q2 scoring
-│   │   ├── splits.py                           Canonical train/validation/test assignment
-│   │   ├── train.py                            Shared training loop with early stopping
-│   │   └── plots.py                            Figures produced by a training run
-│   ├── data/
-│   │   └── prepare_data.py                     Download raw DREAM/Pyrfume data and PubChem properties
+│   ├── data/prepare_data.py                        ds-prepare: download the DREAM, Pyrfume and PubChem data
 │   ├── preprocessing/
-│   │   ├── dream_dataset.py                    Build molecule and DREAM-rating datasets
-│   │   ├── morgan_fingerprints.py              Generate Morgan fingerprints from canonical SMILES
-│   │   ├── enrich_molecules.py                 Generate RDKit molecular features
-│   │   ├── split_dataset.py                    Assign molecule-level data splits
-│   │   ├── dataset_inspector.py                Create dataset summary plots
-│   │   ├── feature_scaler.py                   Fit the standard feature scaler
-│   │   ├── enriched_feature_scaler.py          Fit the enriched feature scaler
-│   │   ├── target_scaler.py                    Fit the DREAM target scaler
-│   │   └── smiles_tokenizer.py                 Tokenize canonical SMILES
+│   │   ├── dream_dataset.py                        The molecule table
+│   │   ├── morgan_fingerprints.py                  Morgan fingerprints
+│   │   ├── conformers.py                           PubChem 3D coordinates in our atom order
+│   │   ├── enrich_molecules.py                     RDKit, Dragon and charge descriptors; the ds-build command
+│   │   ├── community_features.py                   The published EPI Suite, name, NSPDK and similarity features
+│   │   ├── feature_selection.py                    Which columns each model keeps
+│   │   ├── split_dataset.py                        A step of ds-build: writes split.csv
+│   │   ├── scalers.py                              A step of ds-build: writes the scalers
+│   │   └── dataset_inspector.py                    ds-inspect
+│   ├── core/
+│   │   ├── splits.py                               The split, and where the raw ratings are
+│   │   ├── data/                                   Loads what the commands wrote, one file per job:
+│   │   │   ├── ratings.py                          the DREAM rating files and the published reference scores
+│   │   │   ├── features.py                         the molecule tables joined into rating rows
+│   │   │   ├── scaling.py                          the scalers that ds-build wrote, read back and applied
+│   │   │   ├── targets.py                          the targets of the two subchallenges
+│   │   │   ├── neighbours.py                       nearest-neighbour labels (Q2)
+│   │   │   ├── graphs.py                           molecule graphs and batches
+│   │   │   └── assemble.py                         prepare_graph_data: the loaders of one run
+│   │   ├── metrics.py                              The official DREAM scores
+│   │   ├── train/                                  ds-train
+│   │   │   ├── loop.py                             the loss, one epoch, prediction, the settings of a run
+│   │   │   ├── q2.py                               train_q2: the whole Q2 run, including saving its model
+│   │   │   └── q1.py                               train_q1: the same for Q1
+│   │   └── plots.py                                Draws the figures from the saved outputs
 │   └── training/
-│       ├── custom_model.py                     SMILES CNN, descriptor, and Morgan hybrid model
-│       ├── predict.py                          Score novel SMILES strings
-│       ├── run_experiments.py                  Ablation matrix across models and input branches
-│       ├── cnn.py                              SMILES-only CNN baseline (not implemented yet)
-│       └── transformer.py                      Transformer baseline (not implemented yet)
-├── output/custom_model/
-│   ├── checkpoints/                            Trained model, vocabulary, and fitted scalers
-│   ├── plots/                                  Training and metric comparison PNGs
-│   └── metrics/                                Test predictions and metric reports
-├── results/baseline/dream_challenge/
-│   ├── challenge_2_testset_*.txt               Stored DREAM test-set predictions
-│   ├── official_testset_gold_standard.tsv      DREAM ratings in scorer input format
-│   ├── official_testset_reference_score.json   Calculated reference metrics
-│   ├── published_challenge_scores.json         Published DREAM benchmark scores
-│   └── official_scoring/                       Organizer Q2 scorer and submission validator
-├── tests/                                      Pytest suite for the data contract and scoring
-├── docs/
-│   └── mai642_project_proposal.md              Course project proposal
-├── pyproject.toml                              Poetry project and dependency configuration
-├── poetry.lock                                 Locked dependency versions
-├── requirements.txt                            Pip dependency list
-└── README.md                                   Setup, data preparation, and training guide
+│       ├── custom_model.py                         The 3D molecule graph network with per-attribute attention
+│       ├── predict.py                              ds-predict: score a molecule
+│       └── run_experiments.py                      ds-experiments: reserved, not active
+├── output/
+│   ├── q2/                                         Subchallenge 2: checkpoints/, metrics/, plots/, train.log
+│   └── q1/                                         Subchallenge 1: the same
+├── tests/                                          Pytest suite for the data contract, scoring and training
+├── docs/mai642_project_proposal.md                 Course project proposal
+├── PIPELINE.md                                     The pipeline on one page
+├── RESULTS.md, Q1_SETUP.md, Q2_SETUP.md            Results and the setup of each model
+├── pyproject.toml, poetry.lock, requirements.txt   Dependencies
+└── README.md                                       This guide
 ```
 
 ## Requirements
 
 - Python 3.13 (>=3.13, < 3.14 as declared in `pyproject.toml`)
-- [Poetry](https://python-poetry.org) (2.x) — the project uses poetry for
-  dependency management; package mode is disabled, so `poetry install` only
-  sets up the dependency environment, not the project itself.
+- [Poetry](https://python-poetry.org) (2.x), which manages the dependencies. `poetry install` also
+  installs the project, which registers the `ds-*` commands.
 
 ## Installation
 
@@ -152,155 +156,264 @@ instead of Poetry, call the modules directly, for example
 
 | Command | Purpose |
 |---|---|
-| `ds-prepare` | Download DREAM and Pyrfume sources, fetch PubChem properties |
-| `ds-dataset` | Build the molecule table and the DREAM rating table |
-| `ds-fingerprints` | Generate radius-2, 2048-bit Morgan fingerprints |
-| `ds-enrich` | Add the RDKit descriptor columns |
-| `ds-split` | Assign the canonical train, validation, and test split |
-| `ds-inspect` | Write dataset summary plots and coverage reports |
-| `ds-scale-features` | Fit the base feature scaler |
-| `ds-scale-enriched` | Fit the descriptor scaler |
-| `ds-scale-targets` | Fit the molecule-level target scaler |
-| `ds-train` | Train the hybrid model and report the DREAM score |
-| `ds-predict` | Score novel SMILES strings |
-| `ds-experiments` | Run the ablation matrix |
+| `ds-prepare` | Download the DREAM, Pyrfume and PubChem sources |
+| `ds-build` | Build every file the models read, in order: the tables (molecules, Morgan bits, 3D coordinates, RDKit, Dragon and charge descriptors, the published features, the feature selection), then the split, then the scalers |
+| `ds-inspect` | Check every input of the models, and draw summary plots |
+| `ds-train` | Train and score Subchallenge 1 and 2 (`--challenge q1` or `q2` for one) |
+| `ds-plot` | Draw the figures of the trained models from the files they left |
+| `ds-predict` | Score a molecule |
+| `ds-experiments` | Reserved for the ablations; it only says where they are recorded |
 
 ## Data
 
-### Build the base datasets from raw data
+### Build the tables from raw data
 
-From the repository root, run these commands in order. The first downloads any
-missing DREAM and Pyrfume files, then fetches PubChem compound properties. It
-skips source files that are already present and reuses previously fetched
-PubChem records.
+From the repository root, run these commands in order. `ds-prepare` downloads
+any missing DREAM and Pyrfume files, then fetches PubChem's properties and 3D
+structures. It skips files that are already present and reuses PubChem records
+that it fetched before, so an interrupted run continues where it stopped.
 
-The commands below are Poetry console scripts, installed with `poetry install`
-and runnable from any directory. The module form works as well, for example
-`poetry run python -m scripts.data.prepare_data`.
+The commands are Poetry console scripts, installed with `poetry install`. The
+module form works as well, for example `poetry run python -m scripts.data.prepare_data`.
+They are written for macOS and Linux, and work unchanged in PowerShell or cmd.
 
-The commands are written for macOS/Linux; on Windows the same commands work
-unchanged in PowerShell or cmd.
-
-If the processed datasets are already included in the repository, you can use
-them directly and skip rebuilding.
+If the processed tables are already in the repository, you can skip to `ds-train`.
 
 ```bash
 poetry run ds-prepare
-poetry run ds-dataset
-poetry run ds-fingerprints
-poetry run ds-split
+poetry run ds-build
 poetry run ds-inspect
-poetry run ds-scale-targets
 ```
 
-The scripts create:
+`PIPELINE.md` shows what each command reads and writes. In short:
 
-- `data/raw/pubchem/dream_keller_compound_properties.csv` — PubChem properties
-  for DREAM and Keller compounds.
-- `data/processed/dream_pyrfume/molecule_labels.csv` — one row per molecule,
-  with Keller target ratings and DREAM rating summaries.
-- `data/processed/dream_pyrfume/morgan_fingerprints.csv` — 2048-bit,
-  radius-2 Morgan fingerprints generated from `rdkit_canonical_smiles` and keyed by CID.
-- `data/processed/dream_pyrfume/dream_ratings_with_smiles.csv` — DREAM rating
-  rows joined to molecule information.
-- `data/processed/dream_pyrfume/molecule_labels_with_split.csv` — the base
-  molecule dataset with the canonical split. The test split is the official
-  DREAM test set of 69 compounds and is never sampled. Train and validation
-  are drawn from the 338 compounds that carry training ratings, at roughly
-  85/15 with seed 42, and the remaining compounds are labelled `unused`.
-- `data/processed/dream_pyrfume/inspection/base/` — PNG plots for the base
-  dataset.
+- `ds-prepare --download-only` downloads the raw sources without querying PubChem, and
+  `--force-download` downloads the DREAM and Pyrfume files again. PubChem's 3D structures go to
+  `data/raw/pubchem/dream_conformers.sdf` in batches of 100, with a wait between requests; a
+  cut-off answer is rejected, and molecules without a 3D structure are listed in
+  `dream_conformers_unavailable.txt` and not requested again.
+- `ds-build` first writes the six input tables of `data/processed/dream_pyrfume/`, each named for what it
+  holds, and stops at the first problem.
+- Then it writes `split.csv`. Train is all 338 molecules of `TrainSet.txt`, validation is the 69 DREAM
+  leaderboard molecules (rated in `LBs1.txt`), and test is the official DREAM test set of 69 molecules, which is
+  never sampled and never used for training or epoch selection. The other four molecules have no DREAM
+  ratings and are labelled `unused`. The training order is one fixed shuffle of the training molecules.
+- Last it writes `scalers/feature_scalers.joblib` and `scalers/target_scalers.joblib`: each scaler is fitted
+  on training molecules only, once for the model that selects epochs (338 molecules) and once for the final model
+  (407). `ds-train` reads them and refuses a file fitted on other molecules, other columns or another Q1 blend
+  weight than the run uses.
+- `ds-inspect` prints PASS or FAIL for each check (the split is the DREAM split, no table of molecules carries
+  a rating, every DREAM molecule has Dragon descriptors and the published features, the feature selection kept
+  columns in every block, the training molecules have all 21 means and spreads, the scalers match the run), and
+  draws the plots to `inspection/`. It exits with status 1 if a check fails. It notes the two DREAM molecules
+  that PubChem has no 3D structure for; their graph has the bonds only.
 
-In the processed datasets, `pubchem_smiles` preserves PubChem's original
-SMILES string. RDKit parses that string and writes its canonical isomeric form
-to `rdkit_canonical_smiles`, the column to use as model input. The pipeline
-does not fetch or include PubChem `ConnectivitySMILES`.
+In `molecules.csv`, `pubchem_smiles` preserves PubChem's original SMILES string. RDKit parses that string and
+writes its canonical isomeric form to `rdkit_canonical_smiles`, the column to use as model input. The pipeline
+does not fetch or include PubChem `ConnectivitySMILES`. No table of molecules carries a rating: the ratings are
+read from the raw DREAM files when a model trains.
 
-### Optional RDKit descriptor enrichment
+### Organizer and community features
 
-The base dataset does not require the extra numeric descriptors. To create a
-separate enriched dataset, run these additional commands after the base
-`dream_dataset.py` step:
+`ds-prepare` also downloads the feature files that the DREAM organizers and the community phase published for
+the 476 challenge molecules, from the same pinned commit as the ratings. They cannot be recomputed from a SMILES
+string here, so `ds-build` joins them into `published_features.csv`, keyed by CID:
+
+- `orgname_*`: the organizers' binary 4-letter windows of the molecule names, a larger vocabulary than the
+  windows built from the DREAM odor names.
+- `epi_*`: EPI Suite physical property estimates, such as vapor pressure and log Kow.
+- `nspdk_*`: NSPDK graph-kernel substructure features.
+- `nsim_*` and `msim_*`: NSPDK and Morgan similarity to about 2,000 reference odorants. The NSPDK similarity is
+  the dot product of De Grave's NSPDK vectors, which is how its author defines it, so it is computed from the
+  published vectors. The DREAM molecules are among the reference odorants, and each would own a column of
+  similarity 1 to itself, so those 476 columns are dropped.
+
+Name windows and substructures that only one molecule has are dropped. The graph model reads the EPI Suite
+values with the numeric block, the organizers' name windows with the odor-name features, and the NSPDK and
+similarity features as a structure block of their own.
+
+The organizers' name windows are numbers without their letters, so what each one means is unknown. They raise the
+official test score from 34.35 to 36.34 in the same setup, mostly on valence and the descriptors. The validation
+score did not move, so the gain shows on the test set only. They are part of both models.
+
+### Which columns the model takes
+
+Several datasets describe the same molecules, so their columns overlap: RDKit's carbon count is Dragon's `nC`,
+and many Morgan bits, name windows, and substructures are constant or copies of each other. The last step of
+`ds-build` decides, once, which columns are kept from each dataset and writes the decision to
+`feature_selection.csv`, one row per candidate column with the reason it was dropped. It uses only the features,
+never the ratings, and sees the features of all 476 DREAM molecules, test molecules included, as the name windows
+already do. A column is dropped when it is:
+
+- **constant:** it has one value for every DREAM molecule;
+- **rare:** a binary or substructure column that only one molecule has, which the model could only memorise;
+- **a duplicate:** its rank correlation with a column already kept is at least 0.995. The 0.99 threshold dropped
+  `P_VSA_i_1`, a top valence feature, as a copy of `P_VSA_MR_8` (rank correlation 0.9916).
+
+Datasets are visited in a fixed priority order, Dragon, RDKit, charge, EPI Suite, Morgan bits, name windows,
+NSPDK, and the similarity sets, and the first column of a group of copies is the one that is kept. The data
+loading reads the selection, and a fitted scaler remembers its columns, so a saved model never needs it again.
+
+### RDKit and Dragon descriptors
+
+`ds-build` adds counts for C, H, N, O, P, S, Na, Cl, and I; heavy atoms, aromatic and aliphatic rings, rotatable
+bonds, hydrogen-bond donors and acceptors, topological polar surface area, and estimated logP, all prefixed
+`rdkit_`; the 4,868 Dragon descriptors that the challenge published; and the per-atom Gasteiger charges with their
+summaries. The descriptor values are calculated from `rdkit_canonical_smiles`.
+
+### The models
+
+Models predict the 21 DREAM attributes of a molecule, and results can be compared with the official challenge
+scores using the DREAM scoring method. Benchmark reference files and the official scoring tools are under
+`data/reference/dream_challenge/`.
+
+The model is a graph neural network fused with descriptor features. Each molecule becomes a 3D graph: its atoms sit
+at the positions of PubChem's computed 3D structure, the same for everyone, and every pair of atoms within 6 Å is
+connected. A few molecules that PubChem has no structure for keep their bonds with all distance features set to
+zero. Atoms carry element, degree, charge, hybridisation, aromaticity, hydrogen count, chirality, and Gasteiger
+charge features. Edges carry bond type, conjugation, ring, and stereo flags plus a 16-value radial encoding of the
+distance.
+
+The model reads all the columns of every table, about 19,000 in all. A small network turns each group of columns
+into one vector of 64 numbers, called a token, and attention combines the tokens. Subchallenge 1 has 8 tokens and
+Subchallenge 2 has a ninth, the neighbour token. The diagrams show every layer. `Linear(a -> b)` is a fully
+connected layer from a numbers to b numbers.
+
+#### The tokens (both subchallenges)
+
+```
+ DRAGON  2,008 columns, in 4 families
+   family 1 (88 columns)   Linear(88 -> 16)   + ReLU + Dropout --+
+   family 2 (768 columns)  Linear(768 -> 16)  + ReLU + Dropout --+--> four vectors of 16 numbers
+   family 3 (289 columns)  Linear(289 -> 16)  + ReLU + Dropout --+       |
+   family 4 (863 columns)  Linear(863 -> 16)  + ReLU + Dropout --+       |
+                                                  each one:  Linear(16 -> 64) --> 4 Dragon tokens (64)
+                                                                          |
+                          the four vectors joined (64) -> Linear(64 -> 32) + ReLU + Dropout
+                                                                          v
+                                                          Dragon context (32 numbers)
+                                                                          |
+ MOLECULE GRAPH  atoms with 45 features, bonds with 28 features           | added to every step below
+   every atom:  Linear(45 -> 64) + ReLU                                   |
+   3 rounds of message passing                                            v
+     message on every bond:  Linear(64 + 28 + 32 -> 64) + ReLU    (sending atom, bond and distance features,
+                                                                    Dragon context)
+     all messages that arrive at an atom are added up
+     update of every atom:   Linear(64 + 64 + 32 -> 64) + ReLU    (own numbers, the sum of messages,
+                                                                    Dragon context)
+   mean pooling: the atoms of a molecule are averaged ------------------> graph token (64)
+
+ NUMERIC BLOCK  701 columns (RDKit, charges, EPI Suite, Morgan bits, dilution)
+   Linear(701 -> 64) + ReLU + Dropout -> Linear(64 -> 64) + ReLU ---------> numeric token (64)
+
+ ODOR NAMES  10,608 columns
+   Linear(10,608 -> 32) + ReLU + Dropout -> Linear(32 -> 64) -------------> names token (64)
+
+ STRUCTURE  4,990 columns (NSPDK substructures and similarities, Morgan similarities)
+   Linear(4,990 -> 32) + ReLU + Dropout -> Linear(32 -> 64) --------------> structure token (64)
+```
+
+#### Subchallenge 1: one query for every attribute and participant
+
+```
+ 8 tokens, each 64 numbers (graph, 4 Dragon, numeric, names, structure)
+   |
+   | token dropout 0.15: while training each token is hidden with probability 0.15 (one always stays)
+   v
+ keys = Linear(64 -> 64)(tokens)          values = Linear(64 -> 64)(tokens)
+   |
+   | for each of the 21 attributes and each of the 49 participants there is a query, 64 learned numbers
+   v
+ ATTENTION   score of token i  = query . key_i / 8
+             weights           = softmax over the 8 tokens        (they sum to 1)
+             context           = sum of weight_i x value_i  +  the query          (64 numbers)
+   |
+   v
+ HEAD of the attribute (the same head for all 49 participants)
+   LayerNorm(64) -> Linear(64 -> 32) -> ReLU -> Dropout -> Linear(32 -> 1)
+   |
+   |  + a learned offset for this participant and attribute
+   v
+ one rating.   21 attributes x 49 participants = 1,029 outputs
+```
+
+#### Subchallenge 2: four experts and a gate, a mean and a spread for each attribute
+
+```
+ 9 tokens: the 8 above, and the neighbour token
+   NEIGHBOURS  42 numbers (what the 20 most similar training molecules were rated,
+               by Morgan and by NSPDK similarity)
+   Linear(42 -> 32) + ReLU + Dropout -> Linear(32 -> 64) ------------------> neighbour token (64)
+   |
+   | token dropout 0.3: while training each token is hidden with probability 0.3 (one always stays)
+   v
+ 4 EXPERTS, each reads a view of the tokens plus the numeric token (which holds the dilution)
+   expert 1  the 4 Dragon tokens
+   expert 2  the graph token and the names token
+   expert 3  the structure token
+   expert 4  the neighbour token
+   each expert has its own keys = Linear(64 -> 64), values = Linear(64 -> 64), and for every attribute its own
+   query (64 learned numbers) and its own head:
+     ATTENTION   weights = softmax(query . key_i / 8) over the tokens of its view
+                 context = sum of weight_i x value_i + the query
+     HEAD        LayerNorm(64) -> Linear(64 -> 32) -> ReLU -> Dropout -> Linear(32 -> 2)    (a mean and a spread)
+   |
+   | expert dropout 0.2: while training an expert is switched off for a molecule with probability 0.2
+   v
+ GATE   the average of the visible tokens (64) -> Linear(64 -> 21 x 4) + a learned bias
+        softmax over the 4 experts for each attribute            (the weights sum to 1)
+   |
+   v
+ for each attribute:  mean   = sum over experts of  gate weight x expert mean
+                      spread = sum over experts of  gate weight x expert spread
+ 21 means, then 21 spreads = 42 outputs
+   |
+   v
+ after the network:  the spread is mixed with a curve of the predicted mean
+   spread = weight x curve(mean) + (1 - weight) x network spread
+```
+
+Both subchallenges train on the high and the low concentration ratings, and the model is given the dilution of
+each rating as an input, because the ratings depend on it. Validation and test are scored at high concentration
+only.
+
+### Train, plot and predict
+
+Train the models. Each writes a checkpoint, its metrics and predictions, and a `train.log`, and reports the
+official test score:
 
 ```bash
-poetry run ds-enrich
-poetry run ds-split
-poetry run ds-inspect
-poetry run ds-scale-features
-poetry run ds-scale-enriched
+poetry run ds-train                   # Subchallenge 2, then Subchallenge 1
+poetry run ds-train --challenge q1    # one subchallenge only (q1 or q2)
+poetry run ds-plot                    # draw the figures from the saved outputs
 ```
 
-This creates `molecules_enriched.csv`, then
-`molecules_enriched_with_split.csv`, and saves its plots under
-`data/processed/dream_pyrfume/inspection/enriched/`. The base dataset and its
-outputs remain separate. The splitter uses `molecules_enriched.csv` whenever
-it exists; otherwise it splits `molecule_labels.csv`. The inspector selects
-the matching split dataset automatically. To return to the base dataset,
-remove `molecules_enriched.csv` and `molecules_enriched_with_split.csv` before
-running those two scripts.
+Each subchallenge is one function, `train_q2` in `scripts/core/train/q2.py` and `train_q1` in
+`scripts/core/train/q1.py`, and trains in stages:
 
-Enrichment adds counts for C, H, N, O, P, S, Na, Cl, and I; heavy atoms,
-aromatic and aliphatic rings, rotatable bonds, hydrogen-bond donors and
-acceptors, topological polar surface area, and estimated logP. Numeric columns
-are prefixed with `rdkit_`; the formula and RDKit version are retained for
-traceability. The target scaler fits the 21 DREAM per-molecule mean targets:
-intensity, pleasantness, and 19 semantic odor descriptors. It uses only
-training molecules with DREAM ratings. Repeated DREAM ratings are aggregated
-by molecule in preprocessing, so the model predicts population means rather
-than individual participant ratings. The feature scalers are separate: one
-uses the established descriptor subset and the other uses the expanded
-descriptor set. Scalers fit on training rows only and save artifacts under
-`data/processed/dream_pyrfume/scalers/`. DREAM standard-deviation summaries and
-other `dream_train_*` columns are metadata, not model inputs.
+1. The epoch of each score group is selected by training on the 338 TrainSet molecules and scoring the 69
+   leaderboard molecules after every epoch, with early stopping.
+2. Subchallenge 2 only: the spread of a rating is calibrated on the validation predictions.
+3. The final model is trained from scratch on the TrainSet and leaderboard molecules together (407) for the
+   selected number of epochs.
+4. The final model is scored once on the official test set.
 
-`feature_scaler.py` fits the 13-feature standard set from the enriched split.
-`enriched_feature_scaler.py` fits the 17-feature expanded set, including
-separate P, Na, Cl, and I counts. Both feature scalers use
-columns produced by `enrich_molecules.py`; the descriptor values are calculated
-from `rdkit_canonical_smiles`. `target_scaler.py` fits the DREAM mean targets
-from the base split, so it is run once.
+A run uses one fixed seed (`RANDOM_SEED = 42` in `scripts/core/splits.py`, which seeds the split order, the model
+initialisation, and the batch order), one model, and no folds. Subchallenge 1 smooths every participant's
+training rating with a fixed weight, `Q1_BLEND_ALPHA = 0.8` in `scripts/core/train/q1.py`.
 
-The element-count columns cover elements present in the current dataset. Some
-are very rare, but they remain separate input features for the enriched model.
+Subchallenge 2 writes to `output/q2/` and Subchallenge 1 to `output/q1/`, each with `checkpoints/`, `metrics/`,
+`plots/` and `train.log`.
 
-### Model development
-
-The training code supports experiments with SMILES-based neural networks and
-combined molecular inputs. Depending on the experiment, inputs can include
-RDKit descriptors and Morgan fingerprints alongside canonical SMILES. Models
-predict molecule-level DREAM ratings, and results can be compared with official
-challenge benchmarks using the DREAM scoring method.
-
-Training scripts and model outputs are organized under `scripts/training/`
-and `output/`. Benchmark reference files and scoring tools are under
-`results/baseline/dream_challenge/`. See those directories for the experiment
-scripts, saved results, and supporting data.
-
-Train the hybrid model, which writes a checkpoint and reports the official
-test score:
-
-```bash
-poetry run ds-train
-```
-
-Score a molecule the model has never seen. The command prints the predicted
-mean and spread for each of the 21 DREAM attributes:
+Score a molecule the model has never seen. The command prints the predicted mean and spread for each of the 21
+DREAM attributes:
 
 ```bash
 poetry run ds-predict --smiles "CC(=O)OC1=CC=CC=C1C(=O)O"
 ```
 
-Add `--top 5` to show only the strongest attributes, `--json` for machine
-readable output, or `--smiles-file molecules.txt` to score a list.
-
-To download raw sources without querying PubChem, run:
-
-```bash
-poetry run ds-prepare --download-only
-```
-
-Use `--force-download` with `ds-prepare` to redownload the DREAM and Pyrfume
-source files.
+Add `--top 5` to show only the strongest attributes, `--json` for machine readable output, or
+`--smiles-file molecules.txt` to score a list.
 
 ## Glossary
 
@@ -356,14 +469,15 @@ source files.
 | **Odor descriptor** | A word people used to describe an odor, such as bakery, fruit, garlic, or chemical. Its rating measures how strongly that quality was perceived. |
 | **Mean target** | The average high-intensity rating for one molecule and attribute. Repeated ratings from each person are averaged first, then averaged across people. |
 | **Standard-deviation target** | How much people’s average ratings differed for one molecule and attribute. The custom model predicts this alongside each mean. |
-| **Feature scaler** | A saved transformation that puts numeric inputs on comparable ranges. The custom trainer fits its own feature scaler using only its training fold and stores it with the model. Binary Morgan bits are not scaled. |
-| **Target scaler** | A transformation used to put rating outputs on a training-friendly scale. Predictions are converted back to rating units before scoring. |
-| **Training split** | Molecules used to update model weights. |
-| **Validation split** | Held-out training molecules used to track performance and select the best epoch. They are not used to update model weights. |
+| **Feature scaler** | A saved transformation that puts numeric inputs on comparable ranges. `ds-build` fits it on training molecules only, and the model's checkpoint keeps a copy. Binary Morgan bits are not scaled. |
+| **Target scaler** | A transformation used to put rating outputs on a training-friendly scale. `ds-build` fits it on training molecules only. Predictions are converted back to rating units before scoring. |
+| **Training split** | The 338 TrainSet molecules, used to update model weights. |
+| **Validation split** | The 69 DREAM leaderboard molecules, used to track performance and select the best epoch. The epoch-selection model does not train on them. Once the epoch is chosen, the final model is retrained from scratch on the training and validation molecules together (407 molecules), as the challenge teams could, and is scored once on the test set. |
 | **Test split** | The official 69-molecule DREAM test set, used for the final score. |
 | **DREAM Q2 mean Z-score** | The official Subchallenge 2 score. It averages six correlation-based Z-score components for means and standard deviations. Higher is better; it is not a percentage. |
-| **1D CNN** | The SMILES branch of the custom model. It scans nearby tokens in the SMILES sequence to learn local patterns. |
-| **Model branch** | One path that processes one input type. This model has separate branches for SMILES, RDKit descriptors, and Morgan fingerprints; their learned representations are joined before predicting ratings. |
+| **Message passing** | The graph network step in which every atom updates its own vector from its neighbours' vectors and the bonds and distances to them. Three rounds let information travel across the molecule. |
+| **Attention** | A learned weighting. For each DREAM attribute, the model decides how much to rely on each of the input tokens (eight in Subchallenge 1, nine in Subchallenge 2) when predicting it. |
+| **Model branch** | One path that processes one input type. This model has separate branches for the molecule graph, the Dragon descriptor families, the RDKit, EPI Suite, Morgan, and charge features, the odor-name features, and the structure features; their learned representations are the tokens that each attribute attends over. |
 
 ## Project proposal
 

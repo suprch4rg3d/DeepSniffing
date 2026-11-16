@@ -1,6 +1,10 @@
-from __future__ import annotations
+"""Morgan fingerprints: 2,048 substructure bits of every molecule, radius 2, with chirality.
 
-from pathlib import Path
+The bits mark which small atom environments a molecule has. They are one input of the numeric block of
+both models, and the similarity of molecules to each other is built from them.
+"""
+
+from __future__ import annotations
 
 import numpy as np
 import pandas as pd
@@ -8,9 +12,11 @@ import rdkit
 from rdkit import Chem, DataStructs
 from rdkit.Chem import rdFingerprintGenerator
 
-ROOT = Path(__file__).resolve().parents[2]
-INPUT = ROOT / "data/processed/dream_pyrfume/molecule_labels.csv"
-OUTPUT = ROOT / "data/processed/dream_pyrfume/morgan_fingerprints.csv"
+from scripts.core.splits import PROCESSED_DIR
+from scripts.preprocessing.dream_dataset import OUTPUT_PATH as MOLECULES_PATH
+
+INPUT = MOLECULES_PATH
+OUTPUT = PROCESSED_DIR / "morgan_fingerprints.csv"
 
 RADIUS = 2
 FINGERPRINT_SIZE = 2048
@@ -19,7 +25,7 @@ FINGERPRINT_COLUMNS = [f"morgan_{index:04d}" for index in range(FINGERPRINT_SIZE
 
 def generate_fingerprints() -> pd.DataFrame:
     if not INPUT.is_file():
-        raise FileNotFoundError(f"Molecule dataset not found: {INPUT}")
+        raise FileNotFoundError(f"Molecule table not found: {INPUT}. Run ds-build.")
 
     molecules = pd.read_csv(INPUT)
     required = {"CID", "rdkit_canonical_smiles"}

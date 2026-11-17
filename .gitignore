@@ -248,3 +248,10 @@ Icon
 
 # Generated dataset inspection plots (regenerable via dataset_inspector.py)
 data/processed/dream_pyrfume/inspection/
+
+# The odor decoder: trained models and their backups, and the table that ds-build recreates
+output/odor/
+output/odor_*/
+output/colab/
+data/processed/odor/selfies_variants.csv
+*.part

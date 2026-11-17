@@ -46,6 +46,22 @@ PYRFUME_FILES = (
     "molecules/molecules.csv",
     "prediction_targets/keller_2016.csv",
 )
+# Odor words of thousands of molecules, one folder for each source. Every source lists the words
+# a perfumery or flavor reference gives to a molecule (yes or no), except Dravnieks, whose
+# ratings are graded. Each folder also holds the structures of its molecules.
+ODOR_SOURCES = {
+    "leffingwell": ("behavior.csv", "stimuli.csv"),
+    "goodscents": ("behavior.csv", "molecules.csv", "stimuli.csv"),
+    "arctander_1960": ("behavior_1.csv", "behavior_2.csv", "molecules.csv", "stimuli.csv"),
+    "flavordb": ("behavior.csv", "molecules.csv", "stimuli.csv"),
+    "sharma_2021a": ("behavior.csv", "molecules.csv", "stimuli.csv"),
+    "sharma_2021b": ("behavior_1.csv", "molecules.csv", "stimuli.csv", "odors.csv"),
+    "ifra_2019": ("behavior.csv", "molecules.csv", "stimuli.csv"),
+    "aromadb": ("behavior.csv", "molecules.csv", "stimuli.csv"),
+    "sigma_2014": ("behavior.csv", "molecules.csv", "stimuli.csv"),
+    "flavornet": ("behavior.csv", "molecules.csv", "stimuli.csv"),
+    "dravnieks_1985": ("behavior_1.csv", "behavior_2.csv", "molecules.csv", "stimuli.csv"),
+}
 
 PUG_REST = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid"
 PROPERTIES = (
@@ -89,23 +105,31 @@ def download_file(url: str, destination: Path, force: bool) -> None:
 
 
 def download_sources(force: bool) -> None:
-    for filename in DREAM_FILES:
-        url = (
-            "https://raw.githubusercontent.com/dream-olfaction/olfaction-prediction/"
-            f"{DREAM_COMMIT}/data/{filename}"
-        )
-        download_file(url, DREAM_DATA_DIR / filename, force)
-
-    for filename in DREAM_COMMUNITY_FILES:
-        url = (
-            "https://raw.githubusercontent.com/dream-olfaction/olfaction-prediction/"
-            f"{DREAM_COMMIT}/{DREAM_COMMUNITY_PATH}/{filename}"
-        )
-        download_file(url, DREAM_COMMUNITY_DIR / filename, force)
+    # The Subchallenge 1 and 2 models are not part of the odor goal for now, so their inputs are not
+    # downloaded. Remove the comment marks to download them again.
+    # for filename in DREAM_FILES:
+    #     url = (
+    #         "https://raw.githubusercontent.com/dream-olfaction/olfaction-prediction/"
+    #         f"{DREAM_COMMIT}/data/{filename}"
+    #     )
+    #     download_file(url, DREAM_DATA_DIR / filename, force)
+    #
+    # for filename in DREAM_COMMUNITY_FILES:
+    #     url = (
+    #         "https://raw.githubusercontent.com/dream-olfaction/olfaction-prediction/"
+    #         f"{DREAM_COMMIT}/{DREAM_COMMUNITY_PATH}/{filename}"
+    #     )
+    #     download_file(url, DREAM_COMMUNITY_DIR / filename, force)
 
     for filename in PYRFUME_FILES:
         url = f"https://raw.githubusercontent.com/pyrfume/pyrfume-data/{PYRFUME_COMMIT}/{filename}"
         download_file(url, PYRFUME_DIR / filename, force)
+
+    for source, filenames in ODOR_SOURCES.items():
+        for filename in filenames:
+            path = f"{source}/{filename}"
+            url = f"https://raw.githubusercontent.com/pyrfume/pyrfume-data/{PYRFUME_COMMIT}/{path}"
+            download_file(url, PYRFUME_DIR / path, force)
 
 
 def read_dream_cids(path: Path) -> set[int]:
@@ -335,8 +359,11 @@ def main() -> int:
     download_sources(force=args.force_download)
     if args.download_only:
         return 0
-    properties_status = fetch_pubchem_properties()
-    return max(properties_status, fetch_pubchem_conformers())
+    # The PubChem properties and 3D structures of the DREAM molecules are for the Subchallenge 1 and 2
+    # models only. Remove the comment marks to fetch them again.
+    # properties_status = fetch_pubchem_properties()
+    # return max(properties_status, fetch_pubchem_conformers())
+    return 0
 
 
 if __name__ == "__main__":

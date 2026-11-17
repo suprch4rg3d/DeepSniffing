@@ -19,18 +19,23 @@ dependencies = [
     "tqdm>=4.66",
     "imbalanced-learn>=0.12",
     "joblib>=1.3",
+    "simplemma (>=2.0.0,<3.0.0)",
+    "selfies (>=2.2.0,<3.0.0)",
 ]
 
 [project.scripts]
 # Data acquisition and preprocessing
 ds-prepare = "scripts.data.prepare_data:main"
-ds-build = "scripts.preprocessing.enrich_molecules:main"
-ds-inspect = "scripts.preprocessing.dataset_inspector:main"
+ds-build = "scripts.preprocessing.build_odor:main"
 # Training and evaluation
-ds-train = "scripts.core.train:main"
-ds-plot = "scripts.core.plots:main"
-ds-predict = "scripts.training.predict:main"
-ds-experiments = "scripts.training.run_experiments:main"
+ds-train = "scripts.core.odor.train:main"
+# The Subchallenge 1 and 2 models are off for now. Remove the comment marks to use them again; they also need
+# the DREAM downloads of ds-prepare and scripts.preprocessing.enrich_molecules (the old ds-build).
+# ds-inspect = "scripts.preprocessing.dataset_inspector:main"
+# ds-train = "scripts.core.train:main"  (the Subchallenge 1 and 2 training, replaced above)
+# ds-plot = "scripts.core.plots:main"
+# ds-predict = "scripts.training.predict:main"
+# ds-experiments = "scripts.training.run_experiments:main"
 
 [tool.poetry]
 # Console scripts require the project to be installable. Poetry installs it in

@@ -1,6 +1,6 @@
 """Ask PubChem for what an odor source leaves out: the CID of a molecule, or the structure of a CID.
 
-``scripts/preprocessing/odor_words.py`` combines the odor sources. Whatever a source lacks is written to a
+``scripts/preprocessing/odor_tokens.py`` combines the odor sources. Whatever a source lacks is written to a
 ``missing`` list while the sources are read, and ``PubChem.resolve`` then asks for all of it at once, with
 the API that fits what is known:
 
@@ -92,7 +92,7 @@ def find_cid(kind: str, query: str) -> tuple[int | None, list[int]]:
 
     The relatives come only when a structure found from a name matches no CID exactly. A name rarely
     says which mirror image is meant, so PubChem is asked for every CID with the same connectivity, and
-    ``odor_words`` decides which of them, if any, the molecule is.
+    ``odor_tokens`` decides which of them, if any, the molecule is.
     """
     text = urllib.parse.quote(query, safe="")
     if kind == "smiles":

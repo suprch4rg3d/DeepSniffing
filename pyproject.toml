@@ -1,7 +1,7 @@
 [project]
 name = "deepsniffing"
 version = "0.1.0"
-description = "Predicting human odor profiles from SMILES strings via sequence-based deep learning for (MAI642-Deep Learning) group project"
+description = "Writing molecules for a set of odor tokens with a small decoder-only transformer (MAI642-Deep Learning group project)"
 authors = [
     { name = "Manos (suprch4rg3d)" },
     { name = "Konstantin (kkraso01)" },
@@ -28,14 +28,7 @@ dependencies = [
 ds-prepare = "scripts.data.prepare_data:main"
 ds-build = "scripts.preprocessing.build_odor:main"
 # Training and evaluation
-ds-train = "scripts.core.odor.train:main"
-# The Subchallenge 1 and 2 models are off for now. Remove the comment marks to use them again; they also need
-# the DREAM downloads of ds-prepare and scripts.preprocessing.enrich_molecules (the old ds-build).
-# ds-inspect = "scripts.preprocessing.dataset_inspector:main"
-# ds-train = "scripts.core.train:main"  (the Subchallenge 1 and 2 training, replaced above)
-# ds-plot = "scripts.core.plots:main"
-# ds-predict = "scripts.training.predict:main"
-# ds-experiments = "scripts.training.run_experiments:main"
+ds-train = "scripts.core.train:main"
 
 [tool.poetry]
 # Console scripts require the project to be installable. Poetry installs it in

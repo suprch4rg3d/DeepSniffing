@@ -1,4 +1,4 @@
-"""Tests for the odor words and for the tables of the two training stages."""
+"""Tests for the odor tokens and for the tables of the two training stages."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import selfies as sf
 from rdkit import Chem
 
 from scripts.preprocessing import odor_tables as tables
-from scripts.preprocessing import odor_words as words
+from scripts.preprocessing import odor_tokens as odor_tokens
 
 
 @pytest.mark.parametrize(
@@ -17,24 +17,26 @@ from scripts.preprocessing import odor_words as words
         ("Fruity aroma??", "fruity"),
         ("  FLOWERS ", "floral"),  # the lemma, then the synonym
         ("sulphurous", "sulfurous"),
-        ("lemon", "lemon"),  # a word with its own molecules is not merged
+        ("lemon", "lemon"),  # an odor token with its own molecules is not merged
         ("odorless", ""),
         ("characteristic", ""),
         ("nan", ""),
     ],
 )
-def test_normalize_word(raw, expected):
-    assert words.normalize_word(raw) == expected
+def test_normalize_odor_token(raw, expected):
+    assert odor_tokens.normalize_odor_token(raw) == expected
 
 
 def test_canonical_smiles_keeps_stereochemistry_and_mixtures():
     left, right = (
-        words.canonical_smiles("C[C@H](N)C(=O)O"),
-        words.canonical_smiles("C[C@@H](N)C(=O)O"),
+        odor_tokens.canonical_smiles("C[C@H](N)C(=O)O"),
+        odor_tokens.canonical_smiles("C[C@@H](N)C(=O)O"),
     )
     assert left != right and "@" in left
-    assert words.canonical_smiles("CCO.Cl") is not None  # nothing is dropped for being a mixture
-    assert words.canonical_smiles("not a molecule") is None
+    assert (
+        odor_tokens.canonical_smiles("CCO.Cl") is not None
+    )  # nothing is dropped for being a mixture
+    assert odor_tokens.canonical_smiles("not a molecule") is None
 
 
 def test_selfies_round_trip_keeps_the_mirror_image():
@@ -45,12 +47,30 @@ def test_selfies_round_trip_keeps_the_mirror_image():
         )
 
 
+ENDINGS = ("O", "N", "C=O", "C(=O)O", "S", "Cl")
+PREFIXES = ("", "F", "Br", "I")
+
+
+def molecule(cid: int) -> str:
+    """A different real molecule for every CID, so that a structure stands for one molecule only."""
+    return (
+        PREFIXES[(cid // 150) % len(PREFIXES)]
+        + "C" * (cid % 25 + 1)
+        + ENDINGS[(cid // 25) % len(ENDINGS)]
+    )
+
+
+def no_pubchem() -> pd.DataFrame:
+    """Stands in for the PubChem table, so a test never depends on that 178 MB file being built."""
+    return pd.DataFrame(columns=["cid", "smiles", "selfies", "source"])
+
+
 def odor_table(count: int = 200) -> pd.DataFrame:
     return pd.DataFrame(
         {
             "cid": range(1, count + 1),
-            "smiles": ["CCO"] * count,
-            "words": ["fruity;green"] * count,
+            "smiles": [molecule(cid) for cid in range(1, count + 1)],
+            "odor_tokens": ["fruity;green"] * count,
             "sources": ["goodscents"] * count,
         }
     )
@@ -71,8 +91,10 @@ def test_structures_leave_out_dream_validation_and_test_molecules(monkeypatch):
     monkeypatch.setattr(
         tables,
         "known_structures",
-        lambda: {cid: "CCO" for cid in range(1, 401)},  # 200 more molecules than the odor table has
+        # 200 more molecules than the odor table has
+        lambda: {cid: molecule(cid) for cid in range(1, 401)},
     )
+    monkeypatch.setattr(tables, "read_pubchem_structures", no_pubchem)
     dream = {1, 2, 3}
     dataset = tables.build_odor_dataset(odor_table(), dream)
     structures = tables.build_structures(dataset, dream)
@@ -80,13 +102,42 @@ def test_structures_leave_out_dream_validation_and_test_molecules(monkeypatch):
     assert not set(structures["cid"]) & held_back
     assert set(structures["cid"]) >= set(dataset.loc[dataset["split"] == "train", "cid"])
     assert (structures.loc[structures["cid"] > 200, "source"] == "other").all()
-    assert set(structures["split"]) == {"train", "validation"}
+    # the validation molecules are a fixed and very thin slice of the whole pool (about 5,000 of 58.85
+    # million), so a table of 400 molecules is not expected to hold any of them
+    assert set(structures["split"]) <= {"train", "validation"}
 
 
-def test_vocabulary_has_special_tokens_symbols_and_words():
+def test_a_pubchem_molecule_of_a_held_out_structure_is_left_out(monkeypatch):
+    """PubChem gives one molecule more than one CID, so a held-out structure must go by its structure."""
+    monkeypatch.setattr(tables, "known_structures", dict)
+    dream = {1, 2, 3}
+    dataset = tables.build_odor_dataset(odor_table(), dream)
+    held_back = dataset[dataset["split"].isin(["dream", "validation", "test"])]
+    sneaked = tables.canonical_smiles(held_back["smiles"].iloc[0])
+    monkeypatch.setattr(
+        tables,
+        "read_pubchem_structures",
+        lambda: pd.DataFrame(
+            {  # the same molecule under a CID of its own, and one that is new
+                "cid": [9_000_001, 9_000_002],
+                "smiles": [sneaked, tables.canonical_smiles("CCCCCCCCO")],
+                "selfies": [tables.to_selfies(sneaked), tables.to_selfies("CCCCCCCCO")],
+                "source": ["pubchem", "pubchem"],
+            }
+        ),
+    )
+    structures = tables.build_structures(dataset, dream)
+    assert sneaked not in set(structures["smiles"])  # kept out by its structure
+    assert 9_000_001 not in set(structures["cid"])
+    assert 9_000_002 in set(structures["cid"])  # and the new one is kept
+
+
+def test_vocabulary_has_special_tokens_molecule_tokens_and_odor_tokens():
     structures = pd.DataFrame({"selfies": [tables.to_selfies("CCO")]})
-    dataset = pd.DataFrame({"selfies": [tables.to_selfies("CC=O")], "words": ["fruity;green"]})
+    dataset = pd.DataFrame(
+        {"selfies": [tables.to_selfies("CC=O")], "odor_tokens": ["fruity;green"]}
+    )
     vocabulary = tables.build_vocabulary(structures, dataset)
     assert vocabulary["special"] == list(tables.SPECIAL_TOKENS)
-    assert {"[C]", "[O]", "[=O]"} <= set(vocabulary["symbols"])
-    assert vocabulary["words"] == ["fruity", "green"]
+    assert {"[C]", "[O]", "[=O]"} <= set(vocabulary["molecule_tokens"])
+    assert vocabulary["odor_tokens"] == ["fruity", "green"]

@@ -246,12 +246,19 @@ Icon
 .TemporaryItems
 .apdisk
 
-# Generated dataset inspection plots (regenerable via dataset_inspector.py)
-data/processed/dream_pyrfume/inspection/
+# The odor decoder. Nothing here is committed that ds-prepare and ds-build can make again:
+#   ds-prepare  data/raw/pyrfume-data/        the odor sources, from a pinned commit
+#   ds-build    data/raw/pubchem/CID-*         the PubChem download (1.5 GB + 1.3 GB, 14 GB unpacked)
+#               data/processed/odor/*          the tables, the packed tokens and the PubChem intermediates
+# Two small files are kept because a rebuild could not be trusted to give them again: the vocabulary (the
+# token numbers a saved model is tied to) and the cache of PubChem answers (so a rerun needs no network).
+data/raw/pyrfume-data/
+data/raw/pubchem/*
+!data/raw/pubchem/odor_pubchem.csv
+data/processed/odor/*
+!data/processed/odor/vocabulary.json
+data/processed/odor_dev/
 
-# The odor decoder: trained models and their backups, and the table that ds-build recreates
-output/odor/
-output/odor_*/
-output/colab/
-data/processed/odor/selfies_variants.csv
+# Trained models and the logs of their runs
+output/
 *.part

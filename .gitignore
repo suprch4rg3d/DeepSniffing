@@ -246,19 +246,27 @@ Icon
 .TemporaryItems
 .apdisk
 
-# The odor decoder. Nothing here is committed that ds-prepare and ds-build can make again:
+# The odor decoder. What is committed is what the generator (step 2) and the classifier (step 3) start from, and
+# the PubChem cache; everything else is made again by ds-prepare and ds-build:
 #   ds-prepare  data/raw/pyrfume-data/        the odor sources, from a pinned commit
 #   ds-build    data/raw/pubchem/CID-*         the PubChem download (1.5 GB + 1.3 GB, 14 GB unpacked)
 #               data/processed/odor/*          the tables, the packed tokens and the PubChem intermediates
-# Two small files are kept because a rebuild could not be trusted to give them again: the vocabulary (the
-# token numbers a saved model is tied to) and the cache of PubChem answers (so a rerun needs no network).
+# Committed: the vocabulary (the token numbers a saved model is tied to), the fine-tuning table, the cache of
+# PubChem answers (so a rerun needs no network), and the pretrained decoder (23 MB). The pretraining inputs
+# (structures.csv, 674 MB, and the packed tokens, 201 MB) are over GitHub's 100 MB limit and are rebuilt.
 data/raw/pyrfume-data/
 data/raw/pubchem/*
 !data/raw/pubchem/odor_pubchem.csv
 data/processed/odor/*
 !data/processed/odor/vocabulary.json
+!data/processed/odor/odor_dataset.csv
 data/processed/odor_dev/
 
-# Trained models and the logs of their runs
-output/
+# Trained models and the logs of their runs, except the pretrained decoder that steps 2 and 3 read
+output/*
+!output/odor/
+output/odor/*
+!output/odor/stage1/
+output/odor/stage1/*
+!output/odor/stage1/best.pt
 *.part

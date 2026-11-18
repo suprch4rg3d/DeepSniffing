@@ -77,7 +77,7 @@ DeepSniffing/
 │       ├── metrics.py, history.py              The numbers of a run, and the record of it
 │       └── plots.py, report.py                 Every figure, and the table of results
 ├── tests/                                      Tests of the pipeline, the model and the steps
-├── output/odor/                                Trained models, histories, plots, reports (not committed)
+├── output/odor/                                Trained models, histories, plots, reports (only stage1/best.pt is committed)
 │   ├── stage1/  stage2/  stage3/               The pretraining, the generator, the classifier
 │   └── report/                                 results.md and the figures of the evaluations
 ├── legacy/                                     The earlier DREAM Q1/Q2 work, as one zip
@@ -193,8 +193,10 @@ The 352 validation, 352 test and 468 DREAM molecules are kept out of the pretrai
 gives one molecule more than one CID), so the model never sees them in either step. The splits are reproducible (a
 fixed seed, and a checksum of the CID for the pretraining validation molecules).
 
-Only `vocabulary.json` and the small cache `odor_pubchem.csv` are committed. Everything else is rebuilt by the two
-commands above and is in `.gitignore`.
+Committed are the files that the generator and the classifier start from: `vocabulary.json`, `odor_dataset.csv`, the
+small cache `odor_pubchem.csv` and the pretrained decoder `output/odor/stage1/best.pt` (23 MB). The pretraining inputs
+(`structures.csv`, 674 MB, and the packed tokens, 201 MB) are over GitHub's 100 MB limit, so they, and everything else,
+are rebuilt by the two commands above and are in `.gitignore`.
 
 ### Optional: a small copy for quick tests
 

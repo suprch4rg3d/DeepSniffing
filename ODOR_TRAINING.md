@@ -38,12 +38,16 @@ structure (PubChem gives one molecule more than one CID). The 5,017 validation m
 chosen by a checksum of the CID, so they are the same in every build and a loss from one run can be set beside a
 loss from another.
 
-**What is in git.** Code, and two small data files that a rebuild could not be trusted to give again:
-`data/processed/odor/vocabulary.json` (the token numbers a saved model is tied to, so a model cannot be loaded
-without exactly its token list) and `data/raw/pubchem/odor_pubchem.csv` (the cache of PubChem answers, so a rerun
-needs no network). Everything else is made again by `ds-prepare` (the odor sources, from a pinned commit) and
-`ds-build` (the PubChem download and every table, the packed tokens and the intermediates), and is in
-`.gitignore`, as are the trained models in `output/`. The old graph model and DREAM code is in
+**What is in git.** Code, and the small files that steps 2 and 3 start from or that a rebuild could not give again:
+`data/processed/odor/vocabulary.json` (the token numbers a saved model is tied to, so a model cannot be loaded without
+exactly its token list), `data/processed/odor/odor_dataset.csv` (the fine-tuning table and its split),
+`data/raw/pubchem/odor_pubchem.csv` (the cache of PubChem answers, so a rerun needs no network) and the pretrained
+decoder `output/odor/stage1/best.pt` (23 MB). With those, the classifier and the generator train and are measured
+without any download. The generator's replay reads the packed pretraining tokens, and `evaluate` reads
+`structures.csv` to count what is novel: both are over GitHub's 100 MB limit and are made again by `ds-build`
+(`--replay 0` and `--no-sampling` do without them). Everything else is made by `ds-prepare` (the odor sources, from a
+pinned commit) and `ds-build` (the PubChem download and every table, the packed tokens and the intermediates) and is
+in `.gitignore`, as are the other trained models in `output/`. The old graph model and DREAM code is in
 `legacy/dream_q1_q2_and_old_generator.zip`.
 
 ## Training: three steps that each stand alone

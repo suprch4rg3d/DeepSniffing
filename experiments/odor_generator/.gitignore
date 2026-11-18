@@ -1,4 +1,0 @@
-data/generator_training.pt
-results/before_cleaning/
-__pycache__/
-!results/*.log

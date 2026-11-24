@@ -73,6 +73,19 @@ def dream_cids() -> set[int]:
     return set(pd.read_csv(DREAM_MOLECULES_PATH)["CID"].astype(int))
 
 
+def dream_structures() -> set[str]:
+    """The canonical structure of every DREAM molecule, including the ones no odor source describes.
+
+    The list has 480 molecules and ``odor_dataset`` holds 468 of them. The other twelve would be kept out
+    of the pretraining by CID alone, which is not enough: PubChem gives one molecule more than one CID, and
+    that is the case the structural guard exists for.
+    """
+    table = pd.read_csv(DREAM_MOLECULES_PATH)
+    return {
+        smiles for smiles in table["CanonicalSMILES"].map(canonical_smiles) if smiles is not None
+    }
+
+
 def read_pubchem_structures() -> pd.DataFrame:
     """The molecules of PubChem for the pretraining, or none when that step has not been run."""
     if not PUBCHEM_STRUCTURES_PATH.is_file():
@@ -132,6 +145,8 @@ def build_structures(odor_dataset: pd.DataFrame, held_out: set[int]) -> pd.DataF
     unseen = set(odor_dataset.loc[odor_dataset["split"].isin(["validation", "test"]), "cid"])
     forbidden = odor_dataset.loc[odor_dataset["cid"].isin(held_out | unseen), "smiles"]
     forbidden = {smiles for smiles in forbidden.map(canonical_smiles) if smiles is not None}
+    # The DREAM molecules that never reached odor_dataset have no row to take a structure from.
+    forbidden |= dream_structures()
     table = table[~table["cid"].isin(held_out | unseen) & ~table["smiles"].isin(forbidden)]
     # by CID, as everywhere else: two CIDs of one structure stay two molecules, and are not merged here
     table = table.drop_duplicates("cid").reset_index(drop=True)

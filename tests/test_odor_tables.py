@@ -95,6 +95,7 @@ def test_structures_leave_out_dream_validation_and_test_molecules(monkeypatch):
         lambda: {cid: molecule(cid) for cid in range(1, 401)},
     )
     monkeypatch.setattr(tables, "read_pubchem_structures", no_pubchem)
+    monkeypatch.setattr(tables, "dream_structures", set)
     dream = {1, 2, 3}
     dataset = tables.build_odor_dataset(odor_table(), dream)
     structures = tables.build_structures(dataset, dream)
@@ -110,6 +111,7 @@ def test_structures_leave_out_dream_validation_and_test_molecules(monkeypatch):
 def test_a_pubchem_molecule_of_a_held_out_structure_is_left_out(monkeypatch):
     """PubChem gives one molecule more than one CID, so a held-out structure must go by its structure."""
     monkeypatch.setattr(tables, "known_structures", dict)
+    monkeypatch.setattr(tables, "dream_structures", set)
     dream = {1, 2, 3}
     dataset = tables.build_odor_dataset(odor_table(), dream)
     held_back = dataset[dataset["split"].isin(["dream", "validation", "test"])]
@@ -141,3 +143,42 @@ def test_vocabulary_has_special_tokens_molecule_tokens_and_odor_tokens():
     assert vocabulary["special"] == list(tables.SPECIAL_TOKENS)
     assert {"[C]", "[O]", "[=O]"} <= set(vocabulary["molecule_tokens"])
     assert vocabulary["odor_tokens"] == ["fruity", "green"]
+
+
+def test_a_dream_molecule_with_no_odor_tokens_is_kept_out_by_its_structure(monkeypatch):
+    """Twelve of the 480 DREAM molecules never reach odor_dataset, so only a structure can hold them out."""
+    monkeypatch.setattr(tables, "known_structures", dict)
+    sneaked = tables.canonical_smiles("CCCCCCCCO")
+    monkeypatch.setattr(tables, "dream_structures", lambda: {sneaked})
+    monkeypatch.setattr(
+        tables,
+        "read_pubchem_structures",
+        lambda: pd.DataFrame(
+            {
+                "cid": [9_000_001, 9_000_002],
+                "smiles": [sneaked, tables.canonical_smiles("CCCCO")],
+                "selfies": [tables.to_selfies(sneaked), tables.to_selfies("CCCCO")],
+                "source": ["pubchem", "pubchem"],
+            }
+        ),
+    )
+    dataset = tables.build_odor_dataset(odor_table(), {9_000_000})
+    structures = tables.build_structures(dataset, {9_000_000})
+    assert sneaked not in set(structures["smiles"])  # held out by its structure
+    assert 9_000_002 in set(structures["cid"])  # and a new molecule is kept
+
+
+def test_the_leakage_check_finds_a_dream_molecule_in_the_pretraining(monkeypatch, tmp_path):
+    from scripts.preprocessing import check_leakage
+
+    keller = tmp_path / "keller.csv"
+    structures = tmp_path / "structures.csv"
+    keller.write_text(
+        '"","CID","CanonicalSMILES"\n"1","1","CCO"\n"2","2","CCN"\n', encoding="utf-8"
+    )
+    monkeypatch.setattr(check_leakage, "DREAM_MOLECULES_PATH", keller)
+    monkeypatch.setattr(check_leakage, "STRUCTURES_PATH", structures)
+    structures.write_text("cid,smiles\n1,CCO\n3,CCC\n", encoding="utf-8")
+    assert check_leakage.main() == 1
+    structures.write_text("cid,smiles\n3,CCC\n4,CCCC\n", encoding="utf-8")
+    assert check_leakage.main() == 0

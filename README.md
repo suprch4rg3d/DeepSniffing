@@ -83,7 +83,7 @@ DeepSniffing/
 │   └── report/                                 results.md and the figures of the evaluations
 ├── archive/                                    The work before the decoder: the odor profile model and the first generator, as one zip
 ├── docs/
-│   └── mai642_project_proposal.md              Course project proposal
+│   └── mai642_project_description.md           Course project description
 ├── ODOR_TRAINING.md                            Data, training, scoring, results and limits
 ├── pyproject.toml                              Poetry project and dependency configuration
 ├── poetry.lock                                 Locked dependency versions
@@ -294,6 +294,6 @@ poetry run python -m scripts.core.report                      # results.md and t
 | **ROC-AUC** | How well the classifier ranks the molecules that have an odor token above those that do not, averaged over the odor tokens. 0.5 is chance and 1 is perfect. |
 | **Valid / unique / novel** | Of the molecules the generator writes: the share RDKit can read, the share that differ from each other, and the share found in neither step's training set. |
 
-## Project proposal
+## Project description
 
-See [docs/mai642_project_proposal.md](docs/mai642_project_proposal.md).
+See [docs/mai642_project_description.md](docs/mai642_project_description.md).

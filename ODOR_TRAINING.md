@@ -47,8 +47,8 @@ without any download. The generator's replay reads the packed pretraining tokens
 `structures.csv` to count what is novel: both are over GitHub's 100 MB limit and are made again by `ds-build`
 (`--replay 0` and `--no-sampling` do without them). Everything else is made by `ds-prepare` (the odor sources, from a
 pinned commit) and `ds-build` (the PubChem download and every table, the packed tokens and the intermediates) and is
-in `.gitignore`, as are the other trained models in `output/`. The old graph model and DREAM code is in
-`legacy/dream_q1_q2_and_old_generator.zip`.
+in `.gitignore`, as are the other trained models in `output/`. The earlier odor profile model and DREAM code are in
+`archive/pre-decoder-archive.zip`.
 
 ## Training: three steps that each stand alone
 
@@ -242,4 +242,4 @@ tokens. Compare runs only with runs at the same scale and the same `--max-epochs
 the full table builder refuses to run under `dev`. A fresh stage 1 trained there leaves the request adapters at
 exactly zero.
 
-The old graph model and its DREAM Subchallenge 1 and 2 code, results and documents are removed from the tree; they are in git at the tag `legacy-dream-q1-q2`.
+The earlier odor profile model, its DREAM Subchallenge 1 and 2 code, results and documents are removed from the tree; they are kept in git at the tag `archive/structure-to-odor-profile`.

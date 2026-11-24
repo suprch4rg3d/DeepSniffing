@@ -81,3 +81,47 @@ def test_the_report_has_a_row_for_each_evaluated_split_and_its_figures(monkeypat
         "gain_test.png",
         "generation_test.png",
     }
+
+
+def test_the_classifier_table_reports_the_scores_it_has():
+    evaluation = {
+        "molecules": 352,
+        "roc_auc_macro": 0.812,
+        "average_precision_macro": 0.272,
+        "precision_at_5": 0.5,
+        "precision_at_own_count": 0.62,
+    }
+    table = report.classifier_table({"test": evaluation})
+    assert "| test | 352 | 0.812 | 0.272 | 0.500 | 0.620 |" in table
+
+
+def test_the_report_includes_the_classifier_when_its_evaluations_exist(monkeypatch, tmp_path):
+    import json
+
+    generator = {
+        "conditioning": {
+            "molecules": 1,
+            "loss_with_own_odor_tokens": 0.7,
+            "perplexity_with_own_odor_tokens": 2.0,
+            "gain_over_no_odor_tokens": {"mean": 0.2, "interval_95": 0.05, "helped": 1.0},
+            "per_molecule": {"own": [0.7], "none": [0.9]},
+        }
+    }
+    classifier = {
+        "molecules": 352,
+        "roc_auc_macro": 0.812,
+        "average_precision_macro": 0.272,
+        "precision_at_5": 0.5,
+        "precision_at_own_count": 0.62,
+    }
+    (tmp_path / "evaluation_test.json").write_text(json.dumps(generator), encoding="utf-8")
+    (tmp_path / "stage3").mkdir()
+    (tmp_path / "stage3" / "evaluation_test.json").write_text(
+        json.dumps(classifier), encoding="utf-8"
+    )
+    monkeypatch.setattr(report, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr("sys.argv", ["report"])
+    assert report.main() == 0
+    text = (tmp_path / "report" / "results.md").read_text(encoding="utf-8")
+    assert "## The classifier" in text
+    assert "| test | 352 | 0.812 | 0.272 | 0.500 | 0.620 |" in text

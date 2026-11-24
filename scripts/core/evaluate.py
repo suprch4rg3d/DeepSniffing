@@ -555,6 +555,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # writing molecules: what the model is for, judged only by what the data itself defines
     if not arguments.no_sampling:
+        if not STRUCTURES_PATH.is_file():
+            raise SystemExit(
+                f"{STRUCTURES_PATH} is missing: novel is measured against the pretraining molecules. "
+                "Run ds-build, or pass --no-sampling for the exact numbers only."
+            )
         known = known_molecules()
         report["generation"] = {}
         for odor_tokens in REQUESTS:

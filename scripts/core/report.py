@@ -29,6 +29,26 @@ def read_evaluations(folder: Path, tag: str | None) -> dict[str, dict]:
     return found
 
 
+def classifier_folder(tag: str | None) -> Path:
+    """Where the classifier keeps its evaluations: ``stage3``, or ``stage3_<tag>`` for a tagged run."""
+    return OUTPUT_DIR / (f"stage3_{tag}" if tag else "stage3")
+
+
+def classifier_table(evaluations: dict[str, dict]) -> str:
+    """The classifier's scores, the half of the project the generator tables say nothing about."""
+    rows = [
+        "| split | molecules | ROC-AUC | average precision | precision at 5 | precision at its own count |",
+        "|---|---|---|---|---|---|",
+    ]
+    for split, result in evaluations.items():
+        rows.append(
+            f"| {split} | {result['molecules']} | {result['roc_auc_macro']:.3f} "
+            f"| {result['average_precision_macro']:.3f} | {result['precision_at_5']:.3f} "
+            f"| {result['precision_at_own_count']:.3f} |"
+        )
+    return "\n".join(rows)
+
+
 def results_table(evaluations: dict[str, dict]) -> str:
     rows = [
         "| split | molecules | loss | perplexity | gain over no odor tokens | odor tokens help |",
@@ -61,9 +81,11 @@ def generation_table(generation: dict) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Tables and figures of the evaluations.")
     parser.add_argument("--tag", help="a stage 2 run that was evaluated with --tag")
-    evaluations = read_evaluations(OUTPUT_DIR, parser.parse_args().tag)
+    tag = parser.parse_args().tag
+    evaluations = read_evaluations(OUTPUT_DIR, tag)
     if not evaluations:
         raise SystemExit(f"no evaluation_*.json in {OUTPUT_DIR}. Run evaluate first.")
+    classifier = read_evaluations(classifier_folder(tag), None)
     folder = OUTPUT_DIR / "report"
     folder.mkdir(exist_ok=True)
     text = ["# Results", "", results_table(evaluations)]
@@ -75,6 +97,8 @@ def main() -> int:
         if result.get("generation"):
             generation_bars(result["generation"], folder / f"generation_{split}.png", split)
             text += ["", f"## What it wrote ({split})", "", generation_table(result["generation"])]
+    if classifier:
+        text += ["", "## The classifier", "", classifier_table(classifier)]
     (folder / "results.md").write_text("\n".join(text) + "\n", encoding="utf-8")
     print(f"wrote {folder / 'results.md'}")
     return 0

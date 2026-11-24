@@ -48,6 +48,9 @@ testpaths = ["tests"]
 [tool.ruff]
 target-version = "py313"
 line-length = 100
+# The Colab notebook is glue, and its code cells are kept free of blank lines on purpose, which the
+# formatter and the import sorter both want to put back.
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 # Safety (defaults) + import sorting, modern syntax, common bugs
@@ -55,6 +58,7 @@ select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["scripts"]
+
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

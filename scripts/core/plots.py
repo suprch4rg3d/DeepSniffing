@@ -1,125 +1,134 @@
-"""Figures produced by a training run."""
+"""Every figure: the curves of a training run, and the figures of an evaluation.
+
+Each function takes the numbers and a path and draws one picture; none reads a model. ``python -m
+scripts.core.plots`` draws the curves of a run from its ``history.csv``; ``report`` draws the evaluation figures.
+
+    python -m scripts.core.plots --stage 1|2|3 [--tag NAME]
+"""
 
 from __future__ import annotations
 
-import json
+import argparse
 from pathlib import Path
 
-import matplotlib.pyplot as plt
+import matplotlib
 
-from scripts.core.data import PUBLISHED_BENCHMARKS_PATH
-from scripts.core.metrics import OFFICIAL_NULL_SD
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
-BENCHMARK_LABELS = {
-    "Published challenge winner": "Published challenge\nwinner",
-    "Published all-team model aggregate": "Published all-team\nmodel aggregate",
-    "Published post-challenge ensemble": "Published post-challenge\nensemble",
+from scripts.core import classifier, generator, history, pretrain  # noqa: E402
+
+# figure name -> (title, y label, the history columns it draws). A figure is drawn from the columns that the
+# history has, so a run from before a column existed still gets its other figures.
+CURVES = {
+    "loss": (
+        "Loss",
+        "step 1 and 2: nats per molecule token; step 3: nats per molecule",
+        ["train", "validation", "with_odor", "without_odor"],
+    ),
+    "accuracy": (
+        "Accuracy of the next molecule token",
+        "share of molecule tokens",
+        ["train_accuracy", "validation_accuracy", "with_odor_accuracy", "without_odor_accuracy"],
+    ),
+    "request_gain": (
+        "What the odor tokens add",
+        "loss without the odor tokens minus loss with them",
+        ["request_gain"],
+    ),
+    "roc_auc": (
+        "Naming the odor tokens of a molecule",
+        "macro over the odor tokens (chance is 0.5 for ROC-AUC)",
+        ["roc_auc", "average_precision"],
+    ),
+    "precision": (
+        "Share of the best-scored odor tokens that are true",
+        "precision",
+        ["precision_at_5", "precision_at_own_count"],
+    ),
 }
 
 
-def save_training_plots(history: dict, output_dir: Path) -> list[Path]:
-    """Plot training and validation loss plus the validation challenge score."""
-    output_dir.mkdir(parents=True, exist_ok=True)
+def training_curves(rows: pd.DataFrame, folder: Path) -> list[Path]:
+    """One picture for each entry of ``CURVES`` that the history has a column for, in ``folder``."""
+    folder.mkdir(parents=True, exist_ok=True)
     written = []
-
-    figure, axis = plt.subplots(figsize=(7, 4))
-    axis.plot(history["train_loss"], label="Training")
-    axis.plot(history["validation_loss"], label="Validation")
-    axis.set_xlabel("Epoch")
-    axis.set_ylabel("Scaled MSE (42 outputs)")
-    axis.set_title("Combined model training loss")
-    axis.legend()
-    figure.tight_layout()
-    loss_path = output_dir / "training_loss.png"
-    figure.savefig(loss_path, dpi=160)
-    plt.close(figure)
-    written.append(loss_path)
-
-    metric_names = list(OFFICIAL_NULL_SD)
-    figure, axis = plt.subplots(figsize=(9, 5))
-    for name in metric_names:
-        values = [entry["z_scores"][name] for entry in history["validation_metrics"]]
-        axis.plot(range(1, len(values) + 1), values, label=name.replace("_", " "))
-    scores = [entry["dream_challenge_score"] for entry in history["validation_metrics"]]
-    axis.plot(
-        range(1, len(scores) + 1),
-        scores,
-        color="black",
-        linewidth=2.5,
-        label="Mean Z-score",
-    )
-    axis.set_xlabel("Epoch")
-    axis.set_ylabel("Official DREAM Q2 Z-score components")
-    axis.set_title("DREAM Subchallenge 2 validation metrics")
-    axis.legend(fontsize=8, ncol=2)
-    axis.text(
-        0.01,
-        -0.24,
-        "Internal validation fold; the final 69-molecule test score is reported separately.",
-        transform=axis.transAxes,
-        fontsize=8,
-    )
-    figure.tight_layout(rect=(0, 0.08, 1, 1))
-    metrics_path = output_dir / "dream_challenge_metrics.png"
-    figure.savefig(metrics_path, dpi=160)
-    plt.close(figure)
-    written.append(metrics_path)
+    for name, (title, label, columns) in CURVES.items():
+        present = [c for c in columns if c in rows and rows[c].notna().any()]
+        if not present:
+            continue
+        figure, axis = plt.subplots(figsize=(7, 4))
+        for column in present:
+            axis.plot(rows["epoch"], rows[column], label=column.replace("_", " "))
+        if name == "loss" and "validation" in rows:
+            best = int(rows["validation"].idxmin())
+            axis.axvline(rows["epoch"][best], color="grey", linestyle=":", label="best epoch")
+        axis.set(title=title, xlabel="epoch", ylabel=label)
+        axis.legend()
+        axis.grid(alpha=0.3)
+        path = folder / f"{name}.png"
+        figure.tight_layout()
+        figure.savefig(path, dpi=150)
+        plt.close(figure)
+        written.append(path)
     return written
 
 
-def save_test_metrics_plot(metrics: dict, output_dir: Path) -> Path:
-    """Plot the official test set z scores as a bar chart."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    names = list(OFFICIAL_NULL_SD)
-    values = [metrics["z_scores"][name] for name in names]
-    names.append("Mean Z-score")
-    values.append(metrics["dream_challenge_score"])
-
-    figure, axis = plt.subplots(figsize=(9, 4.5))
-    bars = axis.bar(names, values, color=["#4c78a8"] * 6 + ["#f58518"])
-    axis.axhline(0, color="black", linewidth=0.8)
-    axis.set_ylabel("Official DREAM Q2 Z-score")
-    axis.set_title("Official test-set challenge metrics")
-    axis.tick_params(axis="x", rotation=25)
-    axis.bar_label(bars, fmt="%.2f", padding=3)
+def gain_histogram(own: list[float], none: list[float], path: Path, title: str) -> None:
+    """How much each molecule gains from its own odor tokens: the loss without them minus the loss with them."""
+    gains = np.asarray(none) - np.asarray(own)
+    figure, axis = plt.subplots(figsize=(7, 4))
+    axis.hist(gains, bins=40)
+    axis.axvline(0, color="black", linewidth=1)
+    axis.axvline(gains.mean(), color="red", linestyle="--", label=f"mean {gains.mean():+.3f}")
+    axis.set(
+        title=title,
+        xlabel="gain from the odor tokens (nats per molecule token)",
+        ylabel="molecules",
+    )
+    axis.legend()
     figure.tight_layout()
-    path = output_dir / "test_metrics.png"
-    figure.savefig(path, dpi=160)
+    figure.savefig(path, dpi=150)
     plt.close(figure)
-    return path
 
 
-def save_challenge_comparison_plot(
-    model_metrics: dict,
-    output_dir: Path,
-    reference_metrics: dict | None = None,
-    benchmarks_path: Path = PUBLISHED_BENCHMARKS_PATH,
-) -> Path:
-    """Compare a model score against the stored and published DREAM scores."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    benchmarks = json.loads(benchmarks_path.read_text(encoding="utf-8"))
-
-    names = ["Custom model"]
-    scores = [model_metrics["dream_challenge_score"]]
-    colors = ["#f58518"]
-    if reference_metrics is not None:
-        names.append("Stored reference prediction\n(unattributed)")
-        scores.append(reference_metrics["dream_challenge_score"])
-        colors.append("#4c78a8")
-    for result in benchmarks["scores"]:
-        names.append(BENCHMARK_LABELS.get(result["name"], result["name"]))
-        scores.append(float(result["score"]))
-        colors.append("#72b7b2")
-
-    figure, axis = plt.subplots(figsize=(10, 5.5))
-    bars = axis.bar(names, scores, color=colors)
-    axis.set_ylabel("DREAM Q2 mean Z-score (higher is better)")
-    axis.set_title("Custom model compared with DREAM Subchallenge 2 scores")
-    axis.bar_label(bars, fmt="%.2f", padding=3)
-    axis.set_ylim(0, max(scores) * 1.18)
-    axis.tick_params(axis="x", labelsize=9)
+def generation_bars(generation: dict, path: Path, title: str) -> None:
+    """The valid, unique and novel shares of what the model wrote for each request."""
+    requests = list(generation)
+    shares = ("valid", "unique", "novel")
+    width = 0.8 / len(shares)
+    figure, axis = plt.subplots(figsize=(8, 4))
+    for offset, share in enumerate(shares):
+        axis.bar(
+            np.arange(len(requests)) + offset * width,
+            [generation[request][share] for request in requests],
+            width,
+            label=share,
+        )
+    axis.set_xticks(np.arange(len(requests)) + width, requests, rotation=30, ha="right")
+    axis.set(title=title, ylabel="share of what was written", ylim=(0, 1.05))
+    axis.legend()
     figure.tight_layout()
-    path = output_dir / "dream_challenge_comparison.png"
-    figure.savefig(path, dpi=160)
+    figure.savefig(path, dpi=150)
     plt.close(figure)
-    return path
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Draw the curves of a training run.")
+    parser.add_argument("--stage", choices=("1", "2", "3"), default="2")
+    parser.add_argument("--tag", help="a run kept apart with --tag")
+    arguments = parser.parse_args()
+    folder = {
+        "1": pretrain.folder,
+        "2": lambda: generator.folder(arguments.tag),
+        "3": lambda: classifier.folder(arguments.tag),
+    }[arguments.stage]()
+    for path in training_curves(history.load(folder), folder / "plots"):
+        print(f"wrote {path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

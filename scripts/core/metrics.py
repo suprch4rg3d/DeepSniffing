@@ -1,145 +1,66 @@
-"""Official DREAM Olfaction Challenge scoring.
-
-The challenge is scored as a pseudo R squared, Q2, computed per attribute and
-then z scored against the challenge null model. The mean of those z scores is
-the single number used on the leaderboard, and it is what this module reports.
-"""
+"""The numbers a run is judged by besides its loss: how often the next molecule token is right, and the perplexity."""
 
 from __future__ import annotations
 
-import json
-import re
-from pathlib import Path
+import math
 
 import numpy as np
-import pandas as pd
-
-TARGETS = [
-    "intensity_strength",
-    "valence_pleasantness",
-    "bakery",
-    "sweet",
-    "fruit",
-    "fish",
-    "garlic",
-    "spices",
-    "cold",
-    "sour",
-    "burnt",
-    "acid",
-    "warm",
-    "musky",
-    "sweaty",
-    "ammonia_urinous",
-    "decayed",
-    "wood",
-    "grass",
-    "flower",
-    "chemical",
-]
-TARGET_COUNT = len(TARGETS)
-TARGET_COLUMNS = [f"mean_{target}" for target in TARGETS] + [f"std_{target}" for target in TARGETS]
-
-# Standard deviations of the challenge null model, taken from the official
-# scoring script. Dividing a correlation by these values produces the z score.
-OFFICIAL_NULL_SD = {
-    "intensity_mean": 0.119307474,
-    "valence_mean": 0.126471379,
-    "descriptors_mean": 0.026512975,
-    "intensity_std": 0.119494682,
-    "valence_std": 0.11490659,
-    "descriptors_std": 0.02808499,
-}
+import torch
+from sklearn.metrics import average_precision_score, roc_auc_score
 
 
-def normalize_target_name(name: str) -> str:
-    """Normalise a DREAM attribute label to the internal snake case form."""
-    return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+class Tally:
+    """Counts how often the most probable molecule token is the true one, over the molecule tokens the loss counts."""
+
+    def __init__(self) -> None:
+        self.correct = 0
+        self.total = 0
+
+    def add(self, logits: torch.Tensor, targets: torch.Tensor) -> None:
+        """``logits`` is (molecule tokens, vocabulary) and ``targets`` the true molecule tokens, (molecule tokens,)."""
+        self.correct += int((logits.argmax(dim=-1) == targets).sum())
+        self.total += targets.numel()
+
+    @property
+    def accuracy(self) -> float:
+        return self.correct / self.total if self.total else float("nan")
 
 
-def pearson_across_molecules(actual: np.ndarray, predicted: np.ndarray) -> float:
-    """Pearson correlation across molecules for one attribute."""
-    actual = np.asarray(actual, dtype=np.float64)
-    predicted = np.asarray(predicted, dtype=np.float64)
-    if actual.shape != predicted.shape:
-        raise ValueError("Actual and predicted arrays must have the same shape.")
-    valid = np.isfinite(actual) & np.isfinite(predicted)
-    actual, predicted = actual[valid], predicted[valid]
-    if len(actual) < 2 or np.std(actual) == 0 or np.std(predicted) == 0:
-        return 0.0
-    return float(np.corrcoef(actual, predicted)[0, 1])
+def perplexity(loss: float) -> float:
+    """The loss in nats per molecule token as the number of equally likely molecule tokens the model is torn between."""
+    return math.exp(loss)
 
 
-def dream_challenge_metrics(actual: np.ndarray, predicted: np.ndarray) -> dict:
-    """Compute the official Q2 z scores and the mean z score.
+def odor_token_metrics(scores: np.ndarray, truth: np.ndarray) -> dict:
+    """Macro ROC-AUC and average precision over the odor tokens that can be scored at all.
 
-    Both arrays must hold 21 means followed by 21 standard deviations, in the
-    order given by ``TARGETS``.
+    ``scores`` and ``truth`` are (molecules, odor tokens); an odor token needs a molecule with it and one without it.
     """
-    actual = np.asarray(actual, dtype=np.float64)
-    predicted = np.asarray(predicted, dtype=np.float64)
-    if actual.shape != predicted.shape or actual.shape[1] != TARGET_COUNT * 2:
-        raise ValueError("DREAM Q2 scoring expects 21 means followed by 21 standard deviations.")
-
-    correlations = {
-        "intensity_mean": pearson_across_molecules(actual[:, 0], predicted[:, 0]),
-        "valence_mean": pearson_across_molecules(actual[:, 1], predicted[:, 1]),
-        "descriptors_mean": float(
-            np.mean(
-                [
-                    pearson_across_molecules(actual[:, index], predicted[:, index])
-                    for index in range(2, TARGET_COUNT)
-                ]
-            )
-        ),
-        "intensity_std": pearson_across_molecules(
-            actual[:, TARGET_COUNT], predicted[:, TARGET_COUNT]
-        ),
-        "valence_std": pearson_across_molecules(
-            actual[:, TARGET_COUNT + 1], predicted[:, TARGET_COUNT + 1]
-        ),
-        "descriptors_std": float(
-            np.mean(
-                [
-                    pearson_across_molecules(
-                        actual[:, TARGET_COUNT + index], predicted[:, TARGET_COUNT + index]
-                    )
-                    for index in range(2, TARGET_COUNT)
-                ]
-            )
-        ),
-    }
-    z_scores = {name: correlations[name] / null_sd for name, null_sd in OFFICIAL_NULL_SD.items()}
+    scorable = (truth.sum(axis=0) > 0) & (truth.sum(axis=0) < len(truth))
+    if not scorable.any():
+        return {"odor_tokens_scorable": 0}
+    auc = roc_auc_score(truth[:, scorable], scores[:, scorable], average=None)
+    ap = average_precision_score(truth[:, scorable], scores[:, scorable], average=None)
+    common = truth[:, scorable].sum(axis=0) >= 10
     return {
-        "pearson_correlations": correlations,
-        "z_scores": z_scores,
-        "dream_challenge_score": float(np.mean(list(z_scores.values()))),
+        "odor_tokens_scorable": int(scorable.sum()),
+        "odor_tokens_in_all": int(truth.shape[1]),
+        "roc_auc_macro": float(np.mean(auc)),
+        "roc_auc_macro_odor_tokens_seen_10_times": float(np.mean(auc[common]))
+        if common.any()
+        else None,
+        "average_precision_macro": float(np.mean(ap)),
     }
 
 
-def prediction_matrix_from_submission(path: Path, cids: list[int]) -> np.ndarray:
-    """Load an official DREAM submission file as a 21 + 21 prediction matrix."""
-    submission = pd.read_csv(path, sep="\t")
-    submission = submission.rename(columns={"#oID": "CID"})
-    if not {"CID", "descriptor", "value", "sigma"}.issubset(submission.columns):
-        raise ValueError(f"Unexpected DREAM prediction file format: {path}")
-    submission["CID"] = pd.to_numeric(submission["CID"], errors="raise").astype("int64")
-    submission["target"] = submission["descriptor"].astype(str).map(normalize_target_name)
+def top_precision(scores: np.ndarray, truth: np.ndarray, top: int | None) -> float:
+    """The share of the ``top`` best-scored odor tokens of a molecule that are true, averaged over the molecules.
 
-    value = submission.pivot(index="CID", columns="target", values="value")
-    sigma = submission.pivot(index="CID", columns="target", values="sigma")
-    expected_cids = set(cids)
-    if set(value.index) != expected_cids or set(sigma.index) != expected_cids:
-        raise ValueError(f"Reference predictions do not match the official test CIDs: {path}")
-    if set(value.columns) != set(TARGETS) or set(sigma.columns) != set(TARGETS):
-        raise ValueError(f"Reference predictions do not contain exactly 21 DREAM targets: {path}")
-
-    value = value.loc[cids, TARGETS].to_numpy(dtype=np.float64)
-    sigma = sigma.loc[cids, TARGETS].to_numpy(dtype=np.float64)
-    return np.concatenate((value, sigma), axis=1)
-
-
-def write_metrics(path: Path, metrics: dict) -> None:
-    """Write a metrics dictionary as indented JSON."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+    With ``top`` None each molecule is asked for as many odor tokens as it has, which can reach 1. A fixed number
+    cannot: half of the molecules have fewer than five odor tokens, so precision@5 cannot pass 0.744.
+    """
+    shares = []
+    for row, true in zip(scores, truth, strict=True):
+        asked = min(top or int(true.sum()), len(row))
+        shares.append(true[np.argsort(-row)[:asked]].sum() / asked)
+    return float(np.mean(shares))

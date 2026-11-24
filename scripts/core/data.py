@@ -1,295 +1,265 @@
-"""Canonical data loading for the DREAM olfaction task.
+"""The training texts of the odor decoder, and the batches made of them.
 
-This module owns the data contract. Everything a training script needs comes
-from :func:`prepare_data`:
+Two kinds of text, each a list of token numbers with the place where the loss starts:
 
-* molecules and their features, taken from the processed DREAM and Pyrfume
-  tables plus the Morgan fingerprints
-* the 21 target attributes as a mean and a standard deviation, derived from the
-  raw high intensity ratings exactly as the challenge scores them
-* the canonical split, which holds the official DREAM test compounds out
-* the fitted feature and target scalers, plus the SMILES tokenizer
+    molecule             <bos> molecule tokens <eos>                         pretraining: learn the molecule
+    odor tokens -> molecule    <bos> <odor> odor token odor token ... <sep> molecule tokens <eos>      generator: write a molecule for the odor tokens
 
-Nothing here reads the ``split`` column of the CSV. The split is recomputed from
-the identifiers, so a stale CSV can never silently change what a model trains
-on, and the tests check that the two agree.
+The loss is taken on what is to be predicted, token by token, and not on the instruction. The odor tokens of a
+request are a set, so the model has no position for them and they cannot see each other; which of a
+molecule's odor tokens are asked for, and in which order, is drawn again every time. (The classifier does not
+read texts: it reads the molecules through the frozen decoder, see ``classifier``.)
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from pathlib import Path
+import json
+import random
 
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.preprocessing import StandardScaler
 
-from scripts.core.metrics import TARGET_COLUMNS, TARGETS, normalize_target_name
-from scripts.core.splits import official_test_cids, ordered_split_cids
-from scripts.preprocessing.smiles_tokenizer import SmilesTokenizer
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-PROCESSED_DIR = PROJECT_ROOT / "data/processed/dream_pyrfume"
-MOLECULES_PATH = PROCESSED_DIR / "molecules_enriched.csv"
-SPLIT_TABLE_PATH = PROCESSED_DIR / "molecule_labels_with_split.csv"
-FINGERPRINTS_PATH = PROCESSED_DIR / "morgan_fingerprints.csv"
-RATINGS_DIR = PROJECT_ROOT / "data/raw/dream-olfaction-prediction/data"
-TRAIN_RATINGS_PATH = RATINGS_DIR / "TrainSet.txt"
-TEST_RATINGS_PATH = RATINGS_DIR / "TestSet.txt"
-REFERENCE_PREDICTIONS_PATH = (
-    PROJECT_ROOT / "results/baseline/dream_challenge/challenge_2_testset_1446435104.txt"
+from scripts.core.vocabulary import Vocabulary
+from scripts.preprocessing.molecule_tokens import (
+    OFFSETS_PATH,
+    SPLIT_PATH,
+    SPLITS,
+    STAMP_PATH,
+    TOKENS_PATH,
 )
-PUBLISHED_BENCHMARKS_PATH = (
-    PROJECT_ROOT / "results/baseline/dream_challenge/published_challenge_scores.json"
+from scripts.preprocessing.odor_tables import DATASET_PATH
+
+MAX_ODOR_TOKENS_IN_REQUEST = 6  # a request names 1 to 6 of a molecule's odor tokens
+NO_ODOR_TOKENS_PROBABILITY = (
+    0.1  # and a tenth of the time none, so the model can write for no request
 )
+BATCH_SIZE = 256  # the most texts in a batch
+# The attention of a batch takes memory in proportion to texts x length x length, so a batch of long texts has
+# fewer texts: texts x length x length stays below this. 64 texts of 160 tokens fit, and one text of 837 does.
+ATTENTION_BUDGET = 64 * 160 * 160
+BUCKET_BATCHES = 50  # batches are made of texts of about the same length, within this many batches
 
-MAX_SEQUENCE_LENGTH = 128
-FINGERPRINT_SIZE = 2048
-FINGERPRINT_RADIUS = 2
-OFFICIAL_TEST_SIZE = 69
-
-METADATA_COLUMNS = {"CID", "Odor", "Replicate", "Intensity", "Dilution", "subject #"}
-
-ENRICHED_FEATURE_COLUMNS = [
-    "rdkit_atom_count_c",
-    "rdkit_atom_count_h",
-    "rdkit_atom_count_n",
-    "rdkit_atom_count_o",
-    "rdkit_atom_count_p",
-    "rdkit_atom_count_s",
-    "rdkit_atom_count_na",
-    "rdkit_atom_count_cl",
-    "rdkit_atom_count_i",
-    "rdkit_heavy_atom_count",
-    "rdkit_aromatic_ring_count",
-    "rdkit_aliphatic_ring_count",
-    "rdkit_rotatable_bond_count",
-    "rdkit_hydrogen_bond_donor_count",
-    "rdkit_hydrogen_bond_acceptor_count",
-    "rdkit_topological_polar_surface_area",
-    "rdkit_mol_logp",
-]
+# token numbers, and the index the loss starts at
+Example = tuple[list[int], int]
+Item = tuple[str, list[str]]  # a molecule's SELFIES and its odor tokens
 
 
-@dataclass(frozen=True)
-class DatasetBundle:
-    """Everything needed to train and score one model."""
-
-    arrays: dict[str, tuple[torch.Tensor, ...]]
-    raw_targets: dict[str, np.ndarray]
-    train_cids: list[int]
-    validation_cids: list[int]
-    test_cids: list[int]
-    tokenizer: SmilesTokenizer
-    feature_scaler: StandardScaler
-    target_scaler: StandardScaler
-    features: list[str]
-    fingerprint_columns: list[str]
-    target_columns: list[str]
-
-    @property
-    def vocab_size(self) -> int:
-        return len(self.tokenizer.token_to_id)
-
-    @property
-    def feature_count(self) -> int:
-        return len(self.features)
-
-    @property
-    def fingerprint_count(self) -> int:
-        return len(self.fingerprint_columns)
-
-    @property
-    def target_count(self) -> int:
-        return len(self.target_columns)
-
-    @property
-    def train_size(self) -> int:
-        return len(self.arrays["train"][0])
-
-    @property
-    def validation_size(self) -> int:
-        return len(self.arrays["validation"][0])
-
-    @property
-    def test_size(self) -> int:
-        return len(self.arrays["test"][0])
-
-
-def aggregate_high_intensity_targets(path: Path) -> pd.DataFrame:
-    """Aggregate the official challenge targets from a raw rating file.
-
-    The challenge predicts the mean and the spread of the ratings that each
-    compound received at high intensity. Ratings are averaged per participant
-    first, so a participant who rated a compound more often does not dominate
-    the result, and then averaged across participants.
-    """
-    if not path.is_file():
-        raise FileNotFoundError(f"DREAM rating file does not exist: {path}")
-
-    ratings = pd.read_csv(path, sep="\t").rename(columns={"Compound Identifier": "CID"})
-    required = {"CID", "Intensity", *TARGETS}
-    normalized_columns = {
-        column: normalize_target_name(column)
-        for column in ratings.columns
-        if column not in METADATA_COLUMNS
-    }
-    ratings = ratings.rename(columns=normalized_columns)
-    missing = required.difference(ratings.columns)
-    if missing:
-        raise ValueError(f"DREAM rating file is missing columns: {', '.join(sorted(missing))}")
-
-    high = ratings.loc[ratings["Intensity"].astype(str).str.strip().str.lower() == "high"].copy()
-    if high.empty:
-        raise ValueError(f"No high intensity ratings found in {path}")
-    high["CID"] = pd.to_numeric(high["CID"], errors="raise").astype("int64")
-    for target in TARGETS:
-        high[target] = pd.to_numeric(high[target], errors="coerce")
-
-    if "subject #" not in high.columns:
-        raise ValueError(f"DREAM rating file has no subject identifiers: {path}")
-    subject_means = high.groupby(["CID", "subject #"])[TARGETS].mean()
-    means = subject_means.groupby(level="CID").mean()
-    deviations = subject_means.groupby(level="CID").std(ddof=1)
-    summary = pd.concat([means.add_prefix("mean_"), deviations.add_prefix("std_")], axis=1)
-    ordered_columns = [f"mean_{target}" for target in TARGETS] + [
-        f"std_{target}" for target in TARGETS
+def molecule_text(
+    vocabulary: Vocabulary, selfies: str, odor_tokens: list[str], rng: random.Random
+) -> Example:
+    ids = [
+        vocabulary.special("<bos>"),
+        *vocabulary.molecule_ids(selfies),
+        vocabulary.special("<eos>"),
     ]
-    return summary[ordered_columns].reset_index()
+    return ids, 1
 
 
-def load_molecules() -> pd.DataFrame:
-    """Load the enriched molecule table joined with Morgan fingerprints."""
-    for path in (MOLECULES_PATH, FINGERPRINTS_PATH):
-        if not path.is_file():
-            raise FileNotFoundError(f"Required processed input is missing: {path}")
-
-    molecules = pd.read_csv(MOLECULES_PATH)
-    fingerprints = pd.read_csv(FINGERPRINTS_PATH)
-    features = ENRICHED_FEATURE_COLUMNS
-
-    if "CID" not in fingerprints.columns:
-        raise ValueError(f"Morgan fingerprint file has no CID column: {FINGERPRINTS_PATH}")
-    fingerprint_columns = [
-        column for column in fingerprints.columns if column.startswith("morgan_")
+def request_text(vocabulary: Vocabulary, selfies: str, asked: list[str]) -> Example:
+    """A request for the odor tokens in ``asked`` and the molecule that answers it; the loss is on the molecule."""
+    prompt = [
+        vocabulary.special("<bos>"),
+        vocabulary.special("<odor>"),
+        *vocabulary.odor_ids(asked),
+        vocabulary.special("<sep>"),
     ]
-    expected_fingerprint_columns = [f"morgan_{index:04d}" for index in range(FINGERPRINT_SIZE)]
-    if fingerprint_columns != expected_fingerprint_columns:
-        raise ValueError(
-            "Morgan fingerprint columns must be morgan_0000 through morgan_2047 in "
-            f"{FINGERPRINTS_PATH}"
-        )
-    if fingerprints["CID"].isna().any() or fingerprints["CID"].duplicated().any():
-        raise ValueError("Morgan fingerprints must have one non-empty row per CID.")
-    fingerprints["CID"] = pd.to_numeric(fingerprints["CID"], errors="raise").astype("int64")
-    fingerprint_values = fingerprints[fingerprint_columns].to_numpy()
-    if not np.isin(fingerprint_values, (0, 1)).all():
-        raise ValueError("Morgan fingerprint columns must contain only binary values.")
-
-    required_molecules = {"CID", "rdkit_canonical_smiles", *features}
-    missing = required_molecules.difference(molecules.columns)
-    if missing:
-        raise ValueError(f"Enriched molecule data is missing: {', '.join(sorted(missing))}")
-    if molecules["CID"].duplicated().any():
-        raise ValueError("Enriched molecule data must contain one row per CID.")
-    molecules["CID"] = pd.to_numeric(molecules["CID"], errors="raise").astype("int64")
-    if set(molecules["CID"]) != set(fingerprints["CID"]):
-        raise ValueError("Morgan fingerprint CIDs do not match the enriched molecule CIDs.")
-    return molecules.merge(fingerprints, on="CID", how="left", validate="one_to_one")
-
-
-def prepare_data() -> DatasetBundle:
-    """Assemble the training, validation, and official test tensors."""
-    molecules = load_molecules()
-    molecule_by_cid = molecules.set_index("CID")
-
-    train_targets = aggregate_high_intensity_targets(TRAIN_RATINGS_PATH)
-    test_targets = aggregate_high_intensity_targets(TEST_RATINGS_PATH)
-    if not set(train_targets["CID"]).issubset(molecule_by_cid.index):
-        raise ValueError("Some official DREAM training CIDs have no molecular features.")
-    if not set(test_targets["CID"]).issubset(molecule_by_cid.index):
-        raise ValueError("Some official DREAM test CIDs have no molecular features.")
-    if not set(test_targets["CID"]).issubset(set(official_test_cids())):
-        raise ValueError("Only official DREAM test compounds may be used for testing.")
-
-    train_cids, validation_cids = ordered_split_cids(train_targets["CID"].to_numpy())
-    train_targets = train_targets.set_index("CID")
-    test_targets = test_targets.set_index("CID")
-
-    frames = {}
-    for name, cids in (("train", train_cids), ("validation", validation_cids)):
-        subset = train_targets.loc[cids].reset_index()
-        subset = subset.merge(molecules, on="CID", how="left", validate="one_to_one")
-        subset = subset.dropna(subset=TARGET_COLUMNS)
-        if subset.empty:
-            raise ValueError(f"The {name} split has no labelled molecules.")
-        frames[name] = subset
-
-    test = test_targets.loc[sorted(test_targets.index)].reset_index()
-    test = test.merge(molecules, on="CID", how="left", validate="one_to_one")
-    test = test.dropna(subset=TARGET_COLUMNS)
-    if len(test) != OFFICIAL_TEST_SIZE:
-        raise ValueError(
-            f"Expected the official {OFFICIAL_TEST_SIZE} molecule test set; found {len(test)}."
-        )
-    frames["test"] = test
-
-    features = ENRICHED_FEATURE_COLUMNS.copy()
-    train = frames["train"]
-    feature_scaler = StandardScaler().fit(train[features].to_numpy(dtype=np.float64))
-    target_scaler = StandardScaler().fit(train[TARGET_COLUMNS].to_numpy(dtype=np.float64))
-
-    tokenizer = SmilesTokenizer()
-    train_smiles = train["rdkit_canonical_smiles"].fillna("").astype(str).tolist()
-    if not train_smiles or any(not value.strip() for value in train_smiles):
-        raise ValueError("Training split has missing SMILES or no rows.")
-    tokenizer.fit(train_smiles)
-
-    fingerprint_columns = [f"morgan_{index:04d}" for index in range(FINGERPRINT_SIZE)]
-
-    def encode_rows(rows: pd.DataFrame, with_targets: bool) -> tuple[torch.Tensor, ...]:
-        smiles = rows["rdkit_canonical_smiles"].fillna("").astype(str).tolist()
-        if any(not value.strip() for value in smiles):
-            raise ValueError("A DREAM split contains missing canonical SMILES.")
-        tokens = np.asarray(
-            [tokenizer.encode(value, MAX_SEQUENCE_LENGTH) for value in smiles], dtype=np.int64
-        )
-        scaled_features = feature_scaler.transform(rows[features].to_numpy(dtype=np.float64))
-        fingerprint_values = rows[fingerprint_columns].to_numpy(dtype=np.float32)
-        tensors = (
-            torch.tensor(tokens, dtype=torch.long),
-            torch.tensor(scaled_features, dtype=torch.float32),
-            torch.tensor(fingerprint_values, dtype=torch.float32),
-        )
-        if with_targets:
-            scaled_targets = target_scaler.transform(
-                rows[TARGET_COLUMNS].to_numpy(dtype=np.float64)
-            )
-            tensors += (torch.tensor(scaled_targets, dtype=torch.float32),)
-        return tensors
-
-    arrays = {
-        "train": encode_rows(frames["train"], True),
-        "validation": encode_rows(frames["validation"], True),
-        "test": encode_rows(frames["test"], False),
-    }
-    raw_targets = {
-        "validation": frames["validation"][TARGET_COLUMNS].to_numpy(dtype=np.float64),
-        "test": frames["test"][TARGET_COLUMNS].to_numpy(dtype=np.float64),
-    }
-    test_cids = frames["test"]["CID"].astype(int).tolist()
-
-    return DatasetBundle(
-        arrays=arrays,
-        raw_targets=raw_targets,
-        train_cids=frames["train"]["CID"].astype(int).tolist(),
-        validation_cids=frames["validation"]["CID"].astype(int).tolist(),
-        test_cids=test_cids,
-        tokenizer=tokenizer,
-        feature_scaler=feature_scaler,
-        target_scaler=target_scaler,
-        features=features,
-        fingerprint_columns=fingerprint_columns,
-        target_columns=TARGET_COLUMNS,
+    return (
+        [*prompt, *vocabulary.molecule_ids(selfies), vocabulary.special("<eos>")],
+        len(prompt),
     )
+
+
+def odor_to_molecule(
+    vocabulary: Vocabulary, selfies: str, odor_tokens: list[str], rng: random.Random
+) -> Example:
+    chosen: list[str] = []
+    if odor_tokens and rng.random() >= NO_ODOR_TOKENS_PROBABILITY:
+        chosen = rng.sample(
+            odor_tokens, rng.randint(1, min(MAX_ODOR_TOKENS_IN_REQUEST, len(odor_tokens)))
+        )
+    return request_text(vocabulary, selfies, chosen)
+
+
+# Two fixed requests for the same molecule, to measure whether the odor tokens are used at all: the loss of
+# writing a molecule with its own odor tokens and with none. If the model reads its request, the first is lower,
+# and the difference (``request_gain`` in the history) is how much the odor tokens are worth. A loss that mixes
+# the two, like the training one, cannot show it.
+def asked_molecule(
+    vocabulary: Vocabulary, selfies: str, odor_tokens: list[str], rng: random.Random
+) -> Example:
+    chosen = (
+        rng.sample(odor_tokens, min(MAX_ODOR_TOKENS_IN_REQUEST, len(odor_tokens)))
+        if odor_tokens
+        else []
+    )
+    return request_text(vocabulary, selfies, chosen)
+
+
+def unasked_molecule(
+    vocabulary: Vocabulary, selfies: str, odor_tokens: list[str], rng: random.Random
+) -> Example:
+    return request_text(vocabulary, selfies, [])
+
+
+def load_packed(split: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Stage 1 from ``molecule_tokens``: the token array, where each molecule sits in it, and this split's rows.
+
+    The tokens are mapped, not read, so a pool of any size costs no memory until it is touched, and the
+    numbers are never built again as Python objects.
+    """
+    if not TOKENS_PATH.is_file():
+        raise FileNotFoundError(f"{TOKENS_PATH} not found. Run ds-build (or molecule_tokens).")
+    stamp = json.loads(STAMP_PATH.read_text(encoding="utf-8"))
+    if tuple(stamp["tokens"]) != Vocabulary.load().tokens:
+        raise ValueError(
+            f"{TOKENS_PATH} was packed with another vocabulary. Run molecule_tokens again."
+        )
+    tokens = np.load(TOKENS_PATH, mmap_mode="r")
+    offsets = np.load(OFFSETS_PATH)
+    splits = np.load(SPLIT_PATH)
+    return tokens, offsets, np.flatnonzero(splits == SPLITS.index(split))
+
+
+def packed_batches(
+    vocabulary: Vocabulary,
+    packed: tuple[np.ndarray, np.ndarray, np.ndarray],
+    rng: random.Random,
+    shuffle: bool,
+    batch_size: int = BATCH_SIZE,
+    budget: int = ATTENTION_BUDGET,
+    request: bool = False,
+):
+    """Stage 1 batches cut straight out of the packed tokens: ``<bos> molecule tokens <eos>``, loss from the first.
+
+    Yields the same two things as ``batches``: the token numbers and the mask of what the loss counts.
+
+    With ``request`` the molecule is written after an empty request, ``<bos> <odor> <sep> molecule tokens <eos>``,
+    which is how the model writes when it is asked for nothing. Mixed into the fine-tuning, these
+    molecules keep that prediction in practice (and it is the one that guidance pushes away from), with
+    molecules the model has no odor tokens for.
+    """
+    tokens, offsets, rows = packed
+    bos, eos, pad = (vocabulary.special(name) for name in ("<bos>", "<eos>", "<pad>"))
+    front = (
+        [bos, vocabulary.special("<odor>"), vocabulary.special("<sep>")] if request else [bos]
+    )  # what comes before the molecule tokens; the loss starts after it
+    lead = len(front)
+    order = rows.copy()
+    if shuffle:
+        np.random.default_rng(rng.randrange(1 << 32)).shuffle(order)
+    lengths = (offsets[order + 1] - offsets[order]).astype(np.int64)
+    chunk = batch_size * BUCKET_BATCHES
+    grouped: list[np.ndarray] = []
+    for start in range(0, len(order), chunk):
+        part = order[start : start + chunk]
+        part = part[np.argsort(lengths[start : start + chunk], kind="stable")]
+        current: list[int] = []
+        for row in part.tolist():
+            length = int(offsets[row + 1] - offsets[row]) + lead + 1
+            if current and (len(current) == batch_size or (len(current) + 1) * length**2 > budget):
+                grouped.append(np.array(current))
+                current = []
+            current.append(row)
+        if current:
+            grouped.append(np.array(current))
+    if shuffle:
+        rng.shuffle(grouped)
+    for batch in grouped:
+        sizes = (offsets[batch + 1] - offsets[batch]).astype(np.int64)
+        longest = int(sizes.max()) + lead + 1  # what comes before, the molecule tokens and <eos>
+        ids = torch.full((len(batch), longest), pad, dtype=torch.long)
+        mask = torch.zeros((len(batch), longest), dtype=torch.bool)
+        ids[:, :lead] = torch.tensor(front)
+        for row, (molecule, size) in enumerate(zip(batch.tolist(), sizes.tolist(), strict=True)):
+            start = int(offsets[molecule])
+            ids[row, lead : lead + size] = torch.from_numpy(
+                np.asarray(tokens[start : start + size], dtype=np.int64)
+            )
+            ids[row, lead + size] = eos
+            mask[row, lead : lead + size + 1] = (
+                True  # the molecule tokens and the end token are predicted
+            )
+        yield ids, mask
+
+
+def with_replay(
+    texts,
+    vocabulary: Vocabulary,
+    packed: tuple[np.ndarray, np.ndarray, np.ndarray],
+    count: int,
+    rng: random.Random,
+):
+    """The batches of ``texts`` and of ``count`` molecules of the pretraining written after an empty request,
+    in one shuffled order.
+
+    The pretraining molecules are drawn again every epoch, from the packed tokens, so nothing but the
+    batches of the moment is held in memory. A batch is made of one kind of text and not of both, so the
+    shuffle is of batches.
+    """
+    tokens, offsets, rows = packed
+    chosen = np.random.default_rng(rng.randrange(1 << 32)).choice(
+        rows, size=min(count, len(rows)), replace=False
+    )
+    everything = [
+        *texts,
+        *packed_batches(vocabulary, (tokens, offsets, chosen), rng, True, request=True),
+    ]
+    rng.shuffle(everything)
+    return iter(everything)
+
+
+def load_odor(split: str) -> list[Item]:
+    """Stage 2: the molecules of the split with their odor tokens."""
+    table = pd.read_csv(DATASET_PATH).fillna("")
+    rows = table[table["split"] == split]
+    return [
+        (selfies, text.split(";") if text else [])
+        for selfies, text in zip(rows["selfies"], rows["odor_tokens"], strict=True)
+    ]
+
+
+def batches(
+    vocabulary: Vocabulary,
+    items: list[Item],
+    kinds: list,
+    rng: random.Random,
+    shuffle: bool,
+    batch_size: int = BATCH_SIZE,
+    budget: int = ATTENTION_BUDGET,
+):
+    """Padded token numbers and the mask of the tokens the loss counts, per batch."""
+    examples = [
+        kind(vocabulary, selfies, odor_tokens, rng)
+        for selfies, odor_tokens in items
+        for kind in kinds
+    ]
+    order = list(range(len(examples)))
+    if shuffle:
+        rng.shuffle(order)
+    # Texts of about the same length share a batch, so that little is wasted on padding. A batch is full at
+    # ``batch_size`` texts, or earlier when the attention budget is used up by long texts.
+    chunk = batch_size * BUCKET_BATCHES
+    grouped: list[list[int]] = []
+    for start in range(0, len(order), chunk):
+        part = sorted(order[start : start + chunk], key=lambda i: len(examples[i][0]))
+        current: list[int] = []
+        for i in part:
+            length = len(examples[i][0])
+            if current and (len(current) == batch_size or (len(current) + 1) * length**2 > budget):
+                grouped.append(current)
+                current = []
+            current.append(i)
+        if current:
+            grouped.append(current)
+    if shuffle:
+        rng.shuffle(grouped)
+    for batch in grouped:
+        longest = max(len(examples[i][0]) for i in batch)
+        ids = torch.full((len(batch), longest), vocabulary.special("<pad>"), dtype=torch.long)
+        mask = torch.zeros((len(batch), longest), dtype=torch.bool)
+        for row, i in enumerate(batch):
+            tokens, start = examples[i]
+            ids[row, : len(tokens)] = torch.tensor(tokens)
+            mask[row, start : len(tokens)] = True
+        yield ids, mask

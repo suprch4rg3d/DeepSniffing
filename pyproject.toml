@@ -1,7 +1,7 @@
 [project]
 name = "deepsniffing"
 version = "0.1.0"
-description = "Predicting human odor profiles from SMILES strings via sequence-based deep learning for (MAI642-Deep Learning) group project"
+description = "Writing molecules for a set of odor tokens with a small decoder-only transformer (MAI642-Deep Learning group project)"
 authors = [
     { name = "Manos (suprch4rg3d)" },
     { name = "Konstantin (kkraso01)" },
@@ -19,23 +19,16 @@ dependencies = [
     "tqdm>=4.66",
     "imbalanced-learn>=0.12",
     "joblib>=1.3",
+    "simplemma (>=2.0.0,<3.0.0)",
+    "selfies (>=2.2.0,<3.0.0)",
 ]
 
 [project.scripts]
 # Data acquisition and preprocessing
 ds-prepare = "scripts.data.prepare_data:main"
-ds-dataset = "scripts.preprocessing.dream_dataset:main"
-ds-fingerprints = "scripts.preprocessing.morgan_fingerprints:main"
-ds-enrich = "scripts.preprocessing.enrich_molecules:main"
-ds-split = "scripts.preprocessing.split_dataset:main"
-ds-inspect = "scripts.preprocessing.dataset_inspector:main"
-ds-scale-features = "scripts.preprocessing.feature_scaler:main"
-ds-scale-enriched = "scripts.preprocessing.enriched_feature_scaler:main"
-ds-scale-targets = "scripts.preprocessing.target_scaler:main"
+ds-build = "scripts.preprocessing.build_odor:main"
 # Training and evaluation
-ds-train = "scripts.training.custom_model:main"
-ds-predict = "scripts.training.predict:main"
-ds-experiments = "scripts.training.run_experiments:main"
+ds-train = "scripts.core.train:main"
 
 [tool.poetry]
 # Console scripts require the project to be installable. Poetry installs it in

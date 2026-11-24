@@ -47,8 +47,8 @@ without any download. The generator's replay reads the packed pretraining tokens
 `structures.csv` to count what is novel: both are over GitHub's 100 MB limit and are made again by `ds-build`
 (`--replay 0` and `--no-sampling` do without them). Everything else is made by `ds-prepare` (the odor sources, from a
 pinned commit) and `ds-build` (the PubChem download and every table, the packed tokens and the intermediates) and is
-in `.gitignore`, as are the other trained models in `output/`. The earlier odor profile model and DREAM code are in
-`archive/pre-decoder-archive.zip`.
+in `.gitignore`, as are the other trained models in `output/`. The earlier odor profile model and DREAM code are on the release of
+`archive/structure-to-odor-profile`.
 
 ## Training: three steps that each stand alone
 

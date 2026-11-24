@@ -39,8 +39,8 @@ validation molecules were used to choose settings, the test molecules and the DR
 The repository contains the data pipeline (odor sources and the PubChem download), the three training steps, the
 evaluation, plots and report scripts, and tests. The pretrained decoder, the generator and the classifier are
 trained; their results are in [ODOR_TRAINING.md](ODOR_TRAINING.md). The earlier work, which predicted odor profiles
-from structure, is no longer in the tree: it is in `archive/` and at the git tag
-`archive/structure-to-odor-profile`.
+from structure, is no longer in the tree: it is at the git tag
+`archive/structure-to-odor-profile`, and the parts no commit holds are attached to that release.
 
 ## Repository layout
 
@@ -81,7 +81,6 @@ DeepSniffing/
 ├── output/odor/                                Trained models, histories, plots, reports (only stage1/best.pt is committed)
 │   ├── stage1/  stage2/  stage3/               The pretraining, the generator, the classifier
 │   └── report/                                 results.md and the figures of the evaluations
-├── archive/                                    The work before the decoder: the odor profile model and the first generator, as one zip
 ├── docs/
 │   └── mai642_project_description.md           Course project description
 ├── ODOR_TRAINING.md                            Data, training, scoring, results and limits

@@ -8,9 +8,9 @@ DeepSniffing: Writing Molecules for Odor Words with a Small Decoder-Only Transfo
 
 ## 1. Overview
 
-Computer vision, speech and language have all been rebuilt around deep learning. Smell has not. The
-reason is not a lack of interest but a lack of a task that a network can be scored on: a molecule
-either smells of something or it does not, and no single measurement says which.
+Computer vision, speech and language have all been rebuilt around deep learning. Smell has not.
+Interest is not the problem. A molecule either smells of something or it does not, and no single
+measurement says which.
 
 This project approaches the problem as a language problem in both directions. A molecule is written as
 a SELFIES string, a text notation in which every string is a valid molecule, and an odor is one token
@@ -89,11 +89,10 @@ interesting learning problem, the one that needs a network with millions of para
 behind it, is the language of molecules: what makes a string of atoms a molecule at all, and how a
 perceptual word attaches to it.
 
-So the question changed rather than the ambition. Instead of predicting a rating vector from a
-descriptor table, the model now learns to generate molecular text, and to condition that generation
-on odor words. This is unambiguously a deep learning problem: a transformer trained on 3.4 million
-molecules, fine-tuned with adapters that inject the request into every layer, and a classifier head
-trained on frozen representations. Nothing in it can be replaced by a random forest.
+So we changed the question. Instead of predicting a rating vector from a descriptor table, the model
+now learns to generate molecular text and to condition that generation on odor words. This is a deep learning problem: a transformer trained on 3.4 million molecules, fine-tuned
+with adapters that inject the request into every layer, and a classifier head trained on frozen
+representations. None of it can be replaced by a random forest.
 
 The earlier work is not thrown away. It is preserved in the repository at the git tag
 `archive/structure-to-odor-profile`, together with its data pipeline, its official-metric scoring and its

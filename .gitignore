@@ -266,7 +266,15 @@ data/processed/odor_dev/
 output/*
 !output/odor/
 output/odor/*
+!output/odor/evaluation_*.json
 !output/odor/stage1/
 output/odor/stage1/*
 !output/odor/stage1/best.pt
+!output/odor/stage2/
+output/odor/stage2/*
+!output/odor/stage2/best.pt
+!output/odor/stage3/
+output/odor/stage3/*
+!output/odor/stage3/best.pt
+!output/odor/stage3/evaluation_*.json
 *.part

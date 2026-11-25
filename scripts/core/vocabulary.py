@@ -48,6 +48,11 @@ class Vocabulary:
     def index(self) -> dict[str, int]:
         return {token: number for number, token in enumerate(self.tokens)}
 
+    @property
+    def odor_tokens(self) -> tuple[str, ...]:
+        """The odor tokens in token-number order, so a column of a score array can be named."""
+        return self.tokens[self.first_odor :]
+
     def special(self, name: str) -> int:
         return SPECIAL_TOKENS.index(name)
 

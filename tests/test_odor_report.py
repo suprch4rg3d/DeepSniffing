@@ -125,3 +125,24 @@ def test_the_report_includes_the_classifier_when_its_evaluations_exist(monkeypat
     text = (tmp_path / "report" / "results.md").read_text(encoding="utf-8")
     assert "## The classifier" in text
     assert "| test | 352 | 0.812 | 0.272 | 0.500 | 0.620 |" in text
+
+
+def test_the_generation_table_shows_how_close_the_nearest_training_molecule_is():
+    generation = {
+        "fruity": {
+            "valid": 1.0,
+            "unique": 0.9,
+            "novel": 0.7,
+            "weight_median": 150.0,
+            "weight_over_350": 0.0,
+            "similarity": {"median": 0.42, "above_0.7": 0.25, "molecules": 180},
+        }
+    }
+    assert "| fruity | 1.00 | 0.90 | 0.70 | 150 | 0.0% | 0.42 | 25% |" in report.generation_table(
+        generation
+    )
+
+
+def test_the_per_token_table_names_the_tokens_it_ranks_worst():
+    rows = [{"token": "almond bitter almond", "auc": 0.41, "molecules": 2}]
+    assert "| almond bitter almond | 0.410 | 2 |" in report.per_token_table(rows)

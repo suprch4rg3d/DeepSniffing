@@ -1,4 +1,4 @@
-"""The numbers a run is judged by besides its loss: how often the next molecule token is right, and the perplexity."""
+"""The numbers a run is judged by besides its loss: the next token, the perplexity, and the odor token scores."""
 
 from __future__ import annotations
 
@@ -64,3 +64,23 @@ def top_precision(scores: np.ndarray, truth: np.ndarray, top: int | None) -> flo
         asked = min(top or int(true.sum()), len(row))
         shares.append(true[np.argsort(-row)[:asked]].sum() / asked)
     return float(np.mean(shares))
+
+
+def per_token_scores(scores: np.ndarray, truth: np.ndarray, tokens: tuple[str, ...]) -> list[dict]:
+    """ROC-AUC and support for every odor token that can be scored, worst first.
+
+    The macro average hides which tokens fail. A token needs at least one molecule with it and one without,
+    so the ones that appear everywhere or nowhere are not scored at all.
+    """
+    rows = []
+    for column, token in enumerate(tokens):
+        positives = int(truth[:, column].sum())
+        if 0 < positives < len(truth):
+            rows.append(
+                {
+                    "token": token,
+                    "auc": float(roc_auc_score(truth[:, column], scores[:, column])),
+                    "molecules": positives,
+                }
+            )
+    return sorted(rows, key=lambda row: row["auc"])

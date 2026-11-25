@@ -60,7 +60,8 @@ import pandas as pd
 import selfies as sf
 import torch
 from rdkit import Chem, RDLogger
-from rdkit.Chem import Descriptors
+from rdkit.Chem import Descriptors, rdFingerprintGenerator
+from rdkit.DataStructs import BulkTanimotoSimilarity
 from sklearn.metrics import roc_auc_score
 
 from scripts.core import data, generator, training
@@ -218,8 +219,50 @@ def decode(rows: list[list[int]], vocabulary: Vocabulary) -> list[str | None]:
     return written
 
 
-def chemistry(written: list[str | None], known: set[str]) -> dict:
-    """The shares that are valid, different from each other and new, and what they weigh."""
+def training_smiles() -> set[str]:
+    """The molecules of the fine-tuning training set, which is what a written molecule is compared against."""
+    table = pd.read_csv(DATASET_PATH)
+    return {smiles for smiles in table.loc[table["split"] == "train", "smiles"]}
+
+
+def training_fingerprints(smiles_set: set[str]) -> list:
+    """Morgan fingerprints of the training molecules, once per evaluation run."""
+    generator = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
+    prints = []
+    for smiles in smiles_set:
+        molecule = Chem.MolFromSmiles(smiles)
+        if molecule is not None:
+            prints.append(generator.GetFingerprint(molecule))
+    return prints
+
+
+def nearest_similarity(written: list[str | None], references: list) -> dict:
+    """How close each distinct written molecule is to the closest molecule it could have learned from.
+
+    ``novel`` counts distinct strings, so a molecule one atom away from a training molecule is as new as one
+    from another world. Tanimoto over Morgan fingerprints says how far the nearest neighbour actually is.
+    """
+    if not references:
+        return {}
+    generator = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
+    nearest = []
+    for smiles in written:
+        molecule = Chem.MolFromSmiles(smiles) if smiles else None
+        if molecule is None:
+            continue
+        fingerprint = generator.GetFingerprint(molecule)
+        nearest.append(float(max(BulkTanimotoSimilarity(fingerprint, references))))
+    if not nearest:
+        return {}
+    return {
+        "median": float(np.median(nearest)),
+        "above_0.7": float(np.mean([value >= 0.7 for value in nearest])),
+        "molecules": len(nearest),
+    }
+
+
+def chemistry(written: list[str | None], known: set[str], references: list | None = None) -> dict:
+    """The shares that are valid, different from each other and new, what they weigh and how close they are."""
     valid = [smiles for smiles in written if smiles]
     unique = sorted(set(valid))
     weights = [Descriptors.MolWt(Chem.MolFromSmiles(smiles)) for smiles in unique]
@@ -230,6 +273,7 @@ def chemistry(written: list[str | None], known: set[str]) -> dict:
         "novel": sum(smiles not in known for smiles in unique) / max(len(unique), 1),
         "weight_median": float(np.median(weights)) if weights else None,
         "weight_over_350": float(np.mean([w > 350 for w in weights])) if weights else None,
+        "similarity": nearest_similarity(unique, references or []),
         "examples": unique[:5],
     }
 
@@ -561,11 +605,12 @@ def main(argv: list[str] | None = None) -> int:
                 "Run ds-build, or pass --no-sampling for the exact numbers only."
             )
         known = known_molecules()
+        references = training_fingerprints(training_smiles())
         report["generation"] = {}
         for odor_tokens in REQUESTS:
             written = write_molecules(model, vocabulary, odor_tokens, arguments.samples)
             report["generation"][" + ".join(odor_tokens) or "(nothing asked for)"] = chemistry(
-                written, known
+                written, known, references
             )
 
     if arguments.ranking:

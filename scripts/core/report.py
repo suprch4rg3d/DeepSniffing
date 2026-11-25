@@ -67,15 +67,26 @@ def results_table(evaluations: dict[str, dict]) -> str:
 
 def generation_table(generation: dict) -> str:
     rows = [
-        "| request | valid | unique | novel | median weight | over 350 |",
-        "|---|---|---|---|---|---|",
+        "| request | valid | unique | novel | median weight | over 350 | nearest training | over 0.7 |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for request, g in generation.items():
+        similarity = g.get("similarity") or {}
+        nearest = f"{similarity['median']:.2f}" if similarity else "n/a"
+        close = f"{similarity['above_0.7']:.0%}" if similarity else "n/a"
         rows.append(
             f"| {request} | {g['valid']:.2f} | {g['unique']:.2f} | {g['novel']:.2f} "
-            f"| {g['weight_median']:.0f} | {g['weight_over_350']:.1%} |"
+            f"| {g['weight_median']:.0f} | {g['weight_over_350']:.1%} | {nearest} | {close} |"
         )
     return "\n".join(rows)
+
+
+def per_token_table(rows: list[dict]) -> str:
+    """The odor tokens the classifier ranks worst, with how many molecules carry each."""
+    lines = ["| odor token | ROC-AUC | molecules |", "|---|---|---|"]
+    for row in rows:
+        lines.append(f"| {row['token']} | {row['auc']:.3f} | {row['molecules']} |")
+    return "\n".join(lines)
 
 
 def main() -> int:
@@ -104,6 +115,14 @@ def main() -> int:
         text += ["", "## What it wrote", "", generation_table(generation)]
     if classifier:
         text += ["", "## The classifier", "", classifier_table(classifier)]
+        shown = classifier.get("test", next(iter(classifier.values()), {}))
+        if shown.get("per_token_worst"):
+            text += [
+                "",
+                "### The ten odor tokens it ranks worst on the test molecules",
+                "",
+                per_token_table(shown["per_token_worst"]),
+            ]
     (folder / "results.md").write_text("\n".join(text) + "\n", encoding="utf-8")
     print(f"wrote {folder / 'results.md'}")
     return 0

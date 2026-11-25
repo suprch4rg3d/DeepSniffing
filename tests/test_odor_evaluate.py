@@ -397,3 +397,20 @@ def test_guided_writing_runs_and_changes_nothing_when_nothing_is_asked(monkeypat
     same = evaluate.write_molecules(model, VOCABULARY, (), count=6, guidance=4.0)
     assert plain == same  # no request: there is nothing to push away from
     assert len(evaluate.write_molecules(model, VOCABULARY, ("fruity",), count=5, guidance=2.5)) == 5
+
+
+def test_a_molecule_it_has_seen_is_a_tanimoto_of_one_from_the_training_set():
+    references = evaluate.training_fingerprints({"CCO", "CCCCO"})
+    assert evaluate.nearest_similarity(["CCO"], references)["median"] == 1.0
+    assert evaluate.nearest_similarity(["CCO"], references)["above_0.7"] == 1.0
+    assert 0.0 <= evaluate.nearest_similarity(["C1CCCCC1"], references)["median"] < 1.0
+    assert evaluate.nearest_similarity([], references) == {}
+
+
+def test_per_token_scores_leave_out_the_tokens_that_cannot_be_scored():
+    scores = np.array([[0.9, 0.9, 0.5], [0.1, 0.1, 0.5], [0.8, 0.8, 0.5]])
+    truth = np.array([[1, 0, 1], [0, 1, 1], [1, 0, 1]])
+    rows = metrics.per_token_scores(scores, truth, ("easy", "hard", "everywhere"))
+    assert [row["token"] for row in rows] == ["hard", "easy"]
+    assert rows[0]["molecules"] == 1
+    assert rows[-1]["auc"] == 1.0

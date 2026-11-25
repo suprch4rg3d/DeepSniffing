@@ -30,9 +30,10 @@ The project is built in three steps, and each step stands alone.
 
 ## 2. Data
 
-The odor tokens come from eleven perfumery and flavor sources collected in Pyrfume: Leffingwell, The
-Good Scents Company, Arctander, FlavorDB, Sharma, IFRA, AromaDB, Sigma, Flavornet, Dravnieks and
-Keller. Together they describe 7,516 molecules with 890 distinct odor tokens.
+The odor tokens come from nine perfumery and flavor sources collected in Pyrfume: Leffingwell, The
+Good Scents Company, Arctander, Sharma's two sets, IFRA, AromaDB, Sigma and Flavornet. Together they
+describe 7,516 molecules with 890 distinct odor tokens. The 480 molecules of the DREAM challenge are
+read from the same collection but are not a source: they are held out as the external test.
 
 The pretraining set is drawn from PubChem, restricted to molecules of 350 Da or less, because a
 molecule has to evaporate to be smelled. 3.4 million compounds are sampled by a checksum of their

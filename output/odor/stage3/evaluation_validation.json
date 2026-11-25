@@ -9,7 +9,7 @@
  "precision_at_own_count": 0.39256763458251953,
  "molecules": 352,
  "odor_tokens_scored": 350,
- "per_token_worst": [
+ "per_token": [
   {
    "token": "neutral",
    "auc": 0.031339031339031376,
@@ -59,46 +59,1659 @@
    "token": "hay new mow hay",
    "auc": 0.3447293447293447,
    "molecules": 1
-  }
- ],
- "per_token_best": [
-  {
-   "token": "rum",
-   "auc": 1.0,
-   "molecules": 1
   },
   {
-   "token": "petitgrain",
-   "auc": 1.0,
-   "molecules": 1
-  },
-  {
-   "token": "mentholic",
-   "auc": 1.0,
+   "token": "marine",
+   "auc": 0.3628571428571429,
    "molecules": 2
   },
   {
-   "token": "honeydew",
-   "auc": 1.0,
+   "token": "new mow hay",
+   "auc": 0.36752136752136755,
    "molecules": 1
   },
   {
-   "token": "goaty",
-   "auc": 1.0,
+   "token": "bean",
+   "auc": 0.37321937321937326,
    "molecules": 1
   },
   {
-   "token": "goat",
-   "auc": 1.0,
+   "token": "acrylate",
+   "auc": 0.41880341880341876,
    "molecules": 1
   },
   {
-   "token": "gasoline",
-   "auc": 1.0,
+   "token": "chemical",
+   "auc": 0.4318840579710144,
+   "molecules": 7
+  },
+  {
+   "token": "acrylic",
+   "auc": 0.4330484330484331,
+   "molecules": 1
+  },
+  {
+   "token": "dust",
+   "auc": 0.45584045584045585,
+   "molecules": 1
+  },
+  {
+   "token": "wild",
+   "auc": 0.4729344729344729,
+   "molecules": 1
+  },
+  {
+   "token": "medicine",
+   "auc": 0.4928571428571429,
+   "molecules": 2
+  },
+  {
+   "token": "davana",
+   "auc": 0.49287749287749283,
+   "molecules": 1
+  },
+  {
+   "token": "sweaty",
+   "auc": 0.49287749287749283,
+   "molecules": 1
+  },
+  {
+   "token": "sea",
+   "auc": 0.5014285714285714,
+   "molecules": 2
+  },
+  {
+   "token": "tea rose",
+   "auc": 0.5042735042735043,
+   "molecules": 1
+  },
+  {
+   "token": "watery",
+   "auc": 0.507163323782235,
    "molecules": 3
   },
   {
-   "token": "fruit dry fruit",
+   "token": "gourmand",
+   "auc": 0.5114942528735632,
+   "molecules": 4
+  },
+  {
+   "token": "forest",
+   "auc": 0.5470085470085471,
+   "molecules": 1
+  },
+  {
+   "token": "narcissus",
+   "auc": 0.5663801337153772,
+   "molecules": 3
+  },
+  {
+   "token": "peppery",
+   "auc": 0.566951566951567,
+   "molecules": 1
+  },
+  {
+   "token": "metal",
+   "auc": 0.5685714285714286,
+   "molecules": 2
+  },
+  {
+   "token": "cedarwood",
+   "auc": 0.5811965811965811,
+   "molecules": 1
+  },
+  {
+   "token": "galbanum",
+   "auc": 0.586894586894587,
+   "molecules": 1
+  },
+  {
+   "token": "terpenic",
+   "auc": 0.5893027698185291,
+   "molecules": 3
+  },
+  {
+   "token": "cranberry",
+   "auc": 0.5954415954415955,
+   "molecules": 1
+  },
+  {
+   "token": "earthy",
+   "auc": 0.5990214067278288,
+   "molecules": 25
+  },
+  {
+   "token": "medicinal",
+   "auc": 0.5994236311239194,
+   "molecules": 5
+  },
+  {
+   "token": "hay",
+   "auc": 0.6030828516377649,
+   "molecules": 6
+  },
+  {
+   "token": "sweet organic chemical",
+   "auc": 0.603988603988604,
+   "molecules": 1
+  },
+  {
+   "token": "opoponax",
+   "auc": 0.6114285714285714,
+   "molecules": 2
+  },
+  {
+   "token": "rose tea rose",
+   "auc": 0.6153846153846154,
+   "molecules": 1
+  },
+  {
+   "token": "cortex",
+   "auc": 0.6208213944603629,
+   "molecules": 3
+  },
+  {
+   "token": "rooty",
+   "auc": 0.6242857142857143,
+   "molecules": 2
+  },
+  {
+   "token": "ozonic",
+   "auc": 0.6267806267806268,
+   "molecules": 1
+  },
+  {
+   "token": "tea",
+   "auc": 0.6305475504322767,
+   "molecules": 5
+  },
+  {
+   "token": "sharp",
+   "auc": 0.6310333657272432,
+   "molecules": 9
+  },
+  {
+   "token": "metallic",
+   "auc": 0.633578431372549,
+   "molecules": 12
+  },
+  {
+   "token": "tropical fruit",
+   "auc": 0.6380133715377267,
+   "molecules": 3
+  },
+  {
+   "token": "camomile",
+   "auc": 0.6438746438746439,
+   "molecules": 1
+  },
+  {
+   "token": "sweet",
+   "auc": 0.6466710041205812,
+   "molecules": 87
+  },
+  {
+   "token": "clary sage",
+   "auc": 0.6467236467236468,
+   "molecules": 1
+  },
+  {
+   "token": "candy",
+   "auc": 0.6514285714285715,
+   "molecules": 2
+  },
+  {
+   "token": "cotton",
+   "auc": 0.6542857142857142,
+   "molecules": 2
+  },
+  {
+   "token": "oily",
+   "auc": 0.6639989837398373,
+   "molecules": 24
+  },
+  {
+   "token": "clary",
+   "auc": 0.6695156695156695,
+   "molecules": 1
+  },
+  {
+   "token": "honey",
+   "auc": 0.6748554913294798,
+   "molecules": 6
+  },
+  {
+   "token": "grill",
+   "auc": 0.6780626780626781,
+   "molecules": 1
+  },
+  {
+   "token": "musty",
+   "auc": 0.6809713905522288,
+   "molecules": 18
+  },
+  {
+   "token": "jammy",
+   "auc": 0.6839080459770115,
+   "molecules": 4
+  },
+  {
+   "token": "ginger",
+   "auc": 0.6866096866096867,
+   "molecules": 1
+  },
+  {
+   "token": "estery",
+   "auc": 0.689913544668588,
+   "molecules": 5
+  },
+  {
+   "token": "leafy",
+   "auc": 0.691860465116279,
+   "molecules": 8
+  },
+  {
+   "token": "oil",
+   "auc": 0.6923076923076923,
+   "molecules": 1
+  },
+  {
+   "token": "banana",
+   "auc": 0.6982758620689656,
+   "molecules": 4
+  },
+  {
+   "token": "sage clary sage",
+   "auc": 0.7008547008547008,
+   "molecules": 1
+  },
+  {
+   "token": "dry fruit",
+   "auc": 0.7037037037037037,
+   "molecules": 1
+  },
+  {
+   "token": "labdanum",
+   "auc": 0.7037037037037037,
+   "molecules": 1
+  },
+  {
+   "token": "ozone",
+   "auc": 0.7065527065527066,
+   "molecules": 1
+  },
+  {
+   "token": "rancid",
+   "auc": 0.7125119388729704,
+   "molecules": 3
+  },
+  {
+   "token": "coconut",
+   "auc": 0.7134575569358178,
+   "molecules": 7
+  },
+  {
+   "token": "fresh",
+   "auc": 0.7158203125,
+   "molecules": 32
+  },
+  {
+   "token": "peach",
+   "auc": 0.7160818713450293,
+   "molecules": 10
+  },
+  {
+   "token": "pungent",
+   "auc": 0.7164179104477613,
+   "molecules": 17
+  },
+  {
+   "token": "root beer",
+   "auc": 0.717948717948718,
+   "molecules": 1
+  },
+  {
+   "token": "rhubarb",
+   "auc": 0.7201528175740209,
+   "molecules": 3
+  },
+  {
+   "token": "dry",
+   "auc": 0.7231614539306847,
+   "molecules": 14
+  },
+  {
+   "token": "raspberry",
+   "auc": 0.7291666666666666,
+   "molecules": 4
+  },
+  {
+   "token": "celery",
+   "auc": 0.7313218390804598,
+   "molecules": 4
+  },
+  {
+   "token": "creamy",
+   "auc": 0.7345132743362832,
+   "molecules": 13
+  },
+  {
+   "token": "lettuce",
+   "auc": 0.7378917378917379,
+   "molecules": 1
+  },
+  {
+   "token": "ether",
+   "auc": 0.7401889534883721,
+   "molecules": 8
+  },
+  {
+   "token": "sour",
+   "auc": 0.7420289855072464,
+   "molecules": 7
+  },
+  {
+   "token": "fat",
+   "auc": 0.7442857142857143,
+   "molecules": 2
+  },
+  {
+   "token": "herbal",
+   "auc": 0.747014115092291,
+   "molecules": 45
+  },
+  {
+   "token": "chloroform",
+   "auc": 0.7492877492877492,
+   "molecules": 1
+  },
+  {
+   "token": "gassy",
+   "auc": 0.7527377521613832,
+   "molecules": 5
+  },
+  {
+   "token": "chocolate",
+   "auc": 0.7593390804597702,
+   "molecules": 4
+  },
+  {
+   "token": "nutty",
+   "auc": 0.7598860398860399,
+   "molecules": 27
+  },
+  {
+   "token": "citrus",
+   "auc": 0.7609939759036145,
+   "molecules": 20
+  },
+  {
+   "token": "cotton candy",
+   "auc": 0.7614285714285715,
+   "molecules": 2
+  },
+  {
+   "token": "soapy",
+   "auc": 0.7685714285714285,
+   "molecules": 2
+  },
+  {
+   "token": "berry",
+   "auc": 0.7692307692307693,
+   "molecules": 13
+  },
+  {
+   "token": "aromatic",
+   "auc": 0.7723342939481268,
+   "molecules": 5
+  },
+  {
+   "token": "violet",
+   "auc": 0.7728571428571429,
+   "molecules": 2
+  },
+  {
+   "token": "vegetable",
+   "auc": 0.7734159779614325,
+   "molecules": 22
+  },
+  {
+   "token": "herbaceous",
+   "auc": 0.7742469879518072,
+   "molecules": 20
+  },
+  {
+   "token": "gardenia",
+   "auc": 0.7742857142857142,
+   "molecules": 2
+  },
+  {
+   "token": "aldehydic",
+   "auc": 0.7750481695568401,
+   "molecules": 6
+  },
+  {
+   "token": "green",
+   "auc": 0.7763808660852494,
+   "molecules": 109
+  },
+  {
+   "token": "powerful",
+   "auc": 0.7765042979942693,
+   "molecules": 3
+  },
+  {
+   "token": "pear",
+   "auc": 0.7794331395348837,
+   "molecules": 8
+  },
+  {
+   "token": "lavender",
+   "auc": 0.78,
+   "molecules": 2
+  },
+  {
+   "token": "dairy",
+   "auc": 0.7808866279069767,
+   "molecules": 8
+  },
+  {
+   "token": "mossy",
+   "auc": 0.781279847182426,
+   "molecules": 3
+  },
+  {
+   "token": "shell",
+   "auc": 0.7834757834757835,
+   "molecules": 1
+  },
+  {
+   "token": "cherry",
+   "auc": 0.7844380403458213,
+   "molecules": 5
+  },
+  {
+   "token": "ketonic",
+   "auc": 0.7855907780979827,
+   "molecules": 5
+  },
+  {
+   "token": "fruity",
+   "auc": 0.7885374050263004,
+   "molecules": 116
+  },
+  {
+   "token": "fruit tropical fruit",
+   "auc": 0.7891737891737891,
+   "molecules": 1
+  },
+  {
+   "token": "fruit overripe fruit",
+   "auc": 0.792022792022792,
+   "molecules": 1
+  },
+  {
+   "token": "guava",
+   "auc": 0.792022792022792,
+   "molecules": 1
+  },
+  {
+   "token": "fatty",
+   "auc": 0.7928685897435898,
+   "molecules": 40
+  },
+  {
+   "token": "green pear",
+   "auc": 0.7948717948717949,
+   "molecules": 1
+  },
+  {
+   "token": "lemon",
+   "auc": 0.7956064947468959,
+   "molecules": 3
+  },
+  {
+   "token": "grass",
+   "auc": 0.7959770114942528,
+   "molecules": 4
+  },
+  {
+   "token": "apple",
+   "auc": 0.7960693153000846,
+   "molecules": 14
+  },
+  {
+   "token": "myrrh",
+   "auc": 0.7977207977207977,
+   "molecules": 1
+  },
+  {
+   "token": "horseradish",
+   "auc": 0.8005698005698005,
+   "molecules": 1
+  },
+  {
+   "token": "root",
+   "auc": 0.8005698005698005,
+   "molecules": 1
+  },
+  {
+   "token": "clean",
+   "auc": 0.8011527377521614,
+   "molecules": 5
+  },
+  {
+   "token": "powdery",
+   "auc": 0.8058823529411765,
+   "molecules": 12
+  },
+  {
+   "token": "lamb",
+   "auc": 0.8062678062678063,
+   "molecules": 1
+  },
+  {
+   "token": "woody",
+   "auc": 0.8064938465566902,
+   "molecules": 67
+  },
+  {
+   "token": "cumin",
+   "auc": 0.8108882521489972,
+   "molecules": 3
+  },
+  {
+   "token": "grape",
+   "auc": 0.8135838150289018,
+   "molecules": 6
+  },
+  {
+   "token": "ripe",
+   "auc": 0.8136645962732919,
+   "molecules": 7
+  },
+  {
+   "token": "apricot",
+   "auc": 0.8144092219020174,
+   "molecules": 5
+  },
+  {
+   "token": "oak moss",
+   "auc": 0.8171428571428572,
+   "molecules": 2
+  },
+  {
+   "token": "boi de rose",
+   "auc": 0.8175740210124165,
+   "molecules": 3
+  },
+  {
+   "token": "blossom",
+   "auc": 0.8185714285714285,
+   "molecules": 2
+  },
+  {
+   "token": "weedy",
+   "auc": 0.8213256484149856,
+   "molecules": 5
+  },
+  {
+   "token": "rose red rose",
+   "auc": 0.8214285714285715,
+   "molecules": 2
+  },
+  {
+   "token": "spicy",
+   "auc": 0.826068191627104,
+   "molecules": 21
+  },
+  {
+   "token": "pineapple",
+   "auc": 0.8283124500133298,
+   "molecules": 11
+  },
+  {
+   "token": "juicy",
+   "auc": 0.8285714285714285,
+   "molecules": 2
+  },
+  {
+   "token": "muguet",
+   "auc": 0.829059829059829,
+   "molecules": 1
+  },
+  {
+   "token": "soupy",
+   "auc": 0.8347578347578348,
+   "molecules": 1
+  },
+  {
+   "token": "tropical",
+   "auc": 0.8351509404140983,
+   "molecules": 19
+  },
+  {
+   "token": "fleshy",
+   "auc": 0.8366762177650429,
+   "molecules": 3
+  },
+  {
+   "token": "acidic",
+   "auc": 0.8366762177650431,
+   "molecules": 3
+  },
+  {
+   "token": "pea",
+   "auc": 0.8376068376068376,
+   "molecules": 1
+  },
+  {
+   "token": "cabbage",
+   "auc": 0.8376313276026743,
+   "molecules": 3
+  },
+  {
+   "token": "cedar",
+   "auc": 0.8404966571155682,
+   "molecules": 3
+  },
+  {
+   "token": "grassy",
+   "auc": 0.8410404624277457,
+   "molecules": 6
+  },
+  {
+   "token": "fry",
+   "auc": 0.8414285714285714,
+   "molecules": 2
+  },
+  {
+   "token": "chamomile",
+   "auc": 0.8442857142857143,
+   "molecules": 2
+  },
+  {
+   "token": "soup",
+   "auc": 0.8461538461538461,
+   "molecules": 1
+  },
+  {
+   "token": "pine",
+   "auc": 0.8480331262939959,
+   "molecules": 7
+  },
+  {
+   "token": "orangeflower",
+   "auc": 0.8518518518518519,
+   "molecules": 1
+  },
+  {
+   "token": "cucumber",
+   "auc": 0.8527298850574712,
+   "molecules": 4
+  },
+  {
+   "token": "dusty",
+   "auc": 0.853868194842407,
+   "molecules": 3
+  },
+  {
+   "token": "floral",
+   "auc": 0.8555844155844156,
+   "molecules": 77
+  },
+  {
+   "token": "rose",
+   "auc": 0.8566200931470394,
+   "molecules": 18
+  },
+  {
+   "token": "anisic",
+   "auc": 0.8570605187319884,
+   "molecules": 5
+  },
+  {
+   "token": "papaya",
+   "auc": 0.8571428571428571,
+   "molecules": 2
+  },
+  {
+   "token": "buttermilk",
+   "auc": 0.8575498575498576,
+   "molecules": 1
+  },
+  {
+   "token": "rosewood",
+   "auc": 0.8586437440305634,
+   "molecules": 3
+  },
+  {
+   "token": "potato",
+   "auc": 0.8662846227316141,
+   "molecules": 3
+  },
+  {
+   "token": "minty",
+   "auc": 0.8664888211382115,
+   "molecules": 24
+  },
+  {
+   "token": "bacon",
+   "auc": 0.8700000000000001,
+   "molecules": 2
+  },
+  {
+   "token": "warm",
+   "auc": 0.8709055876685934,
+   "molecules": 6
+  },
+  {
+   "token": "eggy",
+   "auc": 0.8714285714285714,
+   "molecules": 2
+  },
+  {
+   "token": "fermented",
+   "auc": 0.8716356107660455,
+   "molecules": 7
+  },
+  {
+   "token": "animal",
+   "auc": 0.8726919339164236,
+   "molecules": 9
+  },
+  {
+   "token": "balsamic",
+   "auc": 0.8737941059865203,
+   "molecules": 23
+  },
+  {
+   "token": "ylang",
+   "auc": 0.8742857142857142,
+   "molecules": 2
+  },
+  {
+   "token": "peanut butter",
+   "auc": 0.8746438746438746,
+   "molecules": 1
+  },
+  {
+   "token": "winey",
+   "auc": 0.8757352941176471,
+   "molecules": 12
+  },
+  {
+   "token": "bloody",
+   "auc": 0.8774928774928775,
+   "molecules": 1
+  },
+  {
+   "token": "cheesy",
+   "auc": 0.8779214885409576,
+   "molecules": 13
+  },
+  {
+   "token": "oakmoss",
+   "auc": 0.8785714285714286,
+   "molecules": 2
+  },
+  {
+   "token": "cool",
+   "auc": 0.8818443804034583,
+   "molecules": 5
+  },
+  {
+   "token": "plum",
+   "auc": 0.8834296724470135,
+   "molecules": 6
+  },
+  {
+   "token": "orange",
+   "auc": 0.8848747591522158,
+   "molecules": 6
+  },
+  {
+   "token": "buttery",
+   "auc": 0.8885649497894397,
+   "molecules": 9
+  },
+  {
+   "token": "must",
+   "auc": 0.8885714285714286,
+   "molecules": 2
+  },
+  {
+   "token": "hyacinth",
+   "auc": 0.8892072588347659,
+   "molecules": 3
+  },
+  {
+   "token": "cheese",
+   "auc": 0.8923395445134576,
+   "molecules": 7
+  },
+  {
+   "token": "caramel",
+   "auc": 0.8979338842975206,
+   "molecules": 22
+  },
+  {
+   "token": "camphoraceous",
+   "auc": 0.8987025948103793,
+   "molecules": 18
+  },
+  {
+   "token": "ethereal",
+   "auc": 0.9,
+   "molecules": 22
+  },
+  {
+   "token": "mandarin",
+   "auc": 0.9,
+   "molecules": 2
+  },
+  {
+   "token": "licorice black licorice",
+   "auc": 0.9002849002849003,
+   "molecules": 1
+  },
+  {
+   "token": "naphtha",
+   "auc": 0.9002849002849003,
+   "molecules": 1
+  },
+  {
+   "token": "brothy",
+   "auc": 0.9006685768863419,
+   "molecules": 3
+  },
+  {
+   "token": "geranium",
+   "auc": 0.9014409221902017,
+   "molecules": 5
+  },
+  {
+   "token": "bread bake",
+   "auc": 0.9031339031339032,
+   "molecules": 1
+  },
+  {
+   "token": "magnolia",
+   "auc": 0.9031339031339032,
+   "molecules": 1
+  },
+  {
+   "token": "leather",
+   "auc": 0.9044540229885057,
+   "molecules": 4
+  },
+  {
+   "token": "toast",
+   "auc": 0.9044890162368673,
+   "molecules": 3
+  },
+  {
+   "token": "grapefruit",
+   "auc": 0.904899135446686,
+   "molecules": 5
+  },
+  {
+   "token": "alcoholic",
+   "auc": 0.9072046109510087,
+   "molecules": 5
+  },
+  {
+   "token": "onion cook onion",
+   "auc": 0.9116809116809117,
+   "molecules": 1
+  },
+  {
+   "token": "hazelnut roast hazelnut",
+   "auc": 0.9130850047755492,
+   "molecules": 3
+  },
+  {
+   "token": "lard",
+   "auc": 0.9145299145299145,
+   "molecules": 1
+  },
+  {
+   "token": "waxy",
+   "auc": 0.9151422764227644,
+   "molecules": 24
+  },
+  {
+   "token": "foliage",
+   "auc": 0.9169054441260744,
+   "molecules": 3
+  },
+  {
+   "token": "barley",
+   "auc": 0.9173789173789174,
+   "molecules": 1
+  },
+  {
+   "token": "barley roast barley",
+   "auc": 0.9173789173789174,
+   "molecules": 1
+  },
+  {
+   "token": "humus",
+   "auc": 0.9173789173789174,
+   "molecules": 1
+  },
+  {
+   "token": "almond",
+   "auc": 0.9175983436853001,
+   "molecules": 7
+  },
+  {
+   "token": "jasmine",
+   "auc": 0.9181556195965417,
+   "molecules": 5
+  },
+  {
+   "token": "acetone",
+   "auc": 0.9202279202279202,
+   "molecules": 1
+  },
+  {
+   "token": "plastic",
+   "auc": 0.9202279202279202,
+   "molecules": 1
+  },
+  {
+   "token": "vanilla",
+   "auc": 0.9222383720930232,
+   "molecules": 8
+  },
+  {
+   "token": "tutty fruity",
+   "auc": 0.9230769230769231,
+   "molecules": 1
+  },
+  {
+   "token": "milky",
+   "auc": 0.9235912129894938,
+   "molecules": 3
+  },
+  {
+   "token": "seedy",
+   "auc": 0.9242857142857143,
+   "molecules": 2
+  },
+  {
+   "token": "bake",
+   "auc": 0.9257142857142857,
+   "molecules": 2
+  },
+  {
+   "token": "licorice",
+   "auc": 0.9259259259259259,
+   "molecules": 1
+  },
+  {
+   "token": "nut flesh",
+   "auc": 0.9259259259259259,
+   "molecules": 1
+  },
+  {
+   "token": "sweet pea",
+   "auc": 0.9259259259259259,
+   "molecules": 1
+  },
+  {
+   "token": "shellfish",
+   "auc": 0.9271428571428572,
+   "molecules": 2
+  },
+  {
+   "token": "butter",
+   "auc": 0.9299999999999999,
+   "molecules": 2
+  },
+  {
+   "token": "ammoniacal",
+   "auc": 0.9316239316239316,
+   "molecules": 1
+  },
+  {
+   "token": "sage",
+   "auc": 0.9316239316239316,
+   "molecules": 1
+  },
+  {
+   "token": "leathery",
+   "auc": 0.9324712643678161,
+   "molecules": 4
+  },
+  {
+   "token": "peanut",
+   "auc": 0.933142311365807,
+   "molecules": 3
+  },
+  {
+   "token": "corn chip",
+   "auc": 0.9344729344729344,
+   "molecules": 1
+  },
+  {
+   "token": "savory",
+   "auc": 0.9356831395348837,
+   "molecules": 8
+  },
+  {
+   "token": "tobacco",
+   "auc": 0.9357504665422555,
+   "molecules": 11
+  },
+  {
+   "token": "amber",
+   "auc": 0.9371366279069768,
+   "molecules": 8
+  },
+  {
+   "token": "banana unripe banana",
+   "auc": 0.9373219373219374,
+   "molecules": 1
+  },
+  {
+   "token": "durain",
+   "auc": 0.9373219373219374,
+   "molecules": 1
+  },
+  {
+   "token": "grain toast grain",
+   "auc": 0.9373219373219374,
+   "molecules": 1
+  },
+  {
+   "token": "lilac",
+   "auc": 0.9373219373219374,
+   "molecules": 1
+  },
+  {
+   "token": "hazelnut",
+   "auc": 0.9378612716763006,
+   "molecules": 6
+  },
+  {
+   "token": "smoky",
+   "auc": 0.9378612716763006,
+   "molecules": 6
+  },
+  {
+   "token": "melon",
+   "auc": 0.9383022774327122,
+   "molecules": 7
+  },
+  {
+   "token": "meaty",
+   "auc": 0.9383594120436225,
+   "molecules": 19
+  },
+  {
+   "token": "strawberry",
+   "auc": 0.9385714285714285,
+   "molecules": 2
+  },
+  {
+   "token": "chicken coup",
+   "auc": 0.9401709401709402,
+   "molecules": 1
+  },
+  {
+   "token": "phenolic",
+   "auc": 0.9432720671658725,
+   "molecules": 13
+  },
+  {
+   "token": "malty",
+   "auc": 0.9439655172413793,
+   "molecules": 4
+  },
+  {
+   "token": "vetiver",
+   "auc": 0.944603629417383,
+   "molecules": 3
+  },
+  {
+   "token": "foxy",
+   "auc": 0.9458689458689459,
+   "molecules": 1
+  },
+  {
+   "token": "tutti frutti",
+   "auc": 0.9458689458689459,
+   "molecules": 1
+  },
+  {
+   "token": "radish",
+   "auc": 0.9471428571428572,
+   "molecules": 2
+  },
+  {
+   "token": "neroli",
+   "auc": 0.9482758620689655,
+   "molecules": 4
+  },
+  {
+   "token": "fishy",
+   "auc": 0.9486542443064181,
+   "molecules": 7
+  },
+  {
+   "token": "apple green apple",
+   "auc": 0.9487179487179487,
+   "molecules": 1
+  },
+  {
+   "token": "grain",
+   "auc": 0.9487179487179487,
+   "molecules": 1
+  },
+  {
+   "token": "unripe",
+   "auc": 0.9487179487179487,
+   "molecules": 1
+  },
+  {
+   "token": "unripe banana",
+   "auc": 0.9487179487179487,
+   "molecules": 1
+  },
+  {
+   "token": "coumarinic",
+   "auc": 0.95,
+   "molecules": 2
+  },
+  {
+   "token": "rummy",
+   "auc": 0.9503342884431709,
+   "molecules": 3
+  },
+  {
+   "token": "mutton",
+   "auc": 0.9515669515669516,
+   "molecules": 1
+  },
+  {
+   "token": "roasted",
+   "auc": 0.953443526170799,
+   "molecules": 22
+  },
+  {
+   "token": "brandy",
+   "auc": 0.9542857142857143,
+   "molecules": 2
+  },
+  {
+   "token": "passion fruit",
+   "auc": 0.9544159544159544,
+   "molecules": 1
+  },
+  {
+   "token": "resin",
+   "auc": 0.9544159544159544,
+   "molecules": 1
+  },
+  {
+   "token": "mushroom",
+   "auc": 0.9544668587896254,
+   "molecules": 5
+  },
+  {
+   "token": "burnt",
+   "auc": 0.9555253006580441,
+   "molecules": 13
+  },
+  {
+   "token": "musk",
+   "auc": 0.9557522123893805,
+   "molecules": 13
+  },
+  {
+   "token": "beefy",
+   "auc": 0.9560649474689589,
+   "molecules": 3
+  },
+  {
+   "token": "corn",
+   "auc": 0.9561781609195402,
+   "molecules": 4
+  },
+  {
+   "token": "cassia",
+   "auc": 0.9572649572649573,
+   "molecules": 1
+  },
+  {
+   "token": "raisin",
+   "auc": 0.9572649572649573,
+   "molecules": 1
+  },
+  {
+   "token": "cyclamen",
+   "auc": 0.96,
+   "molecules": 2
+  },
+  {
+   "token": "boil",
+   "auc": 0.9601139601139601,
+   "molecules": 1
+  },
+  {
+   "token": "grapefruit peel",
+   "auc": 0.9601139601139601,
+   "molecules": 1
+  },
+  {
+   "token": "mango",
+   "auc": 0.9628571428571429,
+   "molecules": 2
+  },
+  {
+   "token": "caraway",
+   "auc": 0.962962962962963,
+   "molecules": 1
+  },
+  {
+   "token": "orris",
+   "auc": 0.962962962962963,
+   "molecules": 1
+  },
+  {
+   "token": "sassafrass",
+   "auc": 0.962962962962963,
+   "molecules": 1
+  },
+  {
+   "token": "egg",
+   "auc": 0.9658119658119658,
+   "molecules": 1
+  },
+  {
+   "token": "toast grain",
+   "auc": 0.9658119658119658,
+   "molecules": 1
+  },
+  {
+   "token": "sulfurous",
+   "auc": 0.966153846153846,
+   "molecules": 27
+  },
+  {
+   "token": "fir needle",
+   "auc": 0.97,
+   "molecules": 2
+  },
+  {
+   "token": "chicken",
+   "auc": 0.9700288184438041,
+   "molecules": 5
+  },
+  {
+   "token": "alliaceous",
+   "auc": 0.9710144927536232,
+   "molecules": 7
+  },
+  {
+   "token": "shrimp",
+   "auc": 0.9715099715099715,
+   "molecules": 1
+  },
+  {
+   "token": "peanut roast peanut",
+   "auc": 0.9728571428571429,
+   "molecules": 2
+  },
+  {
+   "token": "ammonia",
+   "auc": 0.9732569245463228,
+   "molecules": 3
+  },
+  {
+   "token": "tomato",
+   "auc": 0.9732569245463228,
+   "molecules": 3
+  },
+  {
+   "token": "lactonic",
+   "auc": 0.9743589743589743,
+   "molecules": 1
+  },
+  {
+   "token": "naphthyl",
+   "auc": 0.9743589743589743,
+   "molecules": 1
+  },
+  {
+   "token": "tonka",
+   "auc": 0.9743589743589743,
+   "molecules": 1
+  },
+  {
+   "token": "orange blossom",
+   "auc": 0.9757142857142856,
+   "molecules": 2
+  },
+  {
+   "token": "sweet tobacco",
+   "auc": 0.9757142857142856,
+   "molecules": 2
+  },
+  {
+   "token": "bread",
+   "auc": 0.9761222540592168,
+   "molecules": 3
+  },
+  {
+   "token": "onion",
+   "auc": 0.9770003239390995,
+   "molecules": 9
+  },
+  {
+   "token": "nut",
+   "auc": 0.9772079772079773,
+   "molecules": 1
+  },
+  {
+   "token": "poultry",
+   "auc": 0.9772079772079773,
+   "molecules": 1
+  },
+  {
+   "token": "resinous",
+   "auc": 0.9772079772079773,
+   "molecules": 1
+  },
+  {
+   "token": "solvent",
+   "auc": 0.9772079772079773,
+   "molecules": 1
+  },
+  {
+   "token": "popcorn",
+   "auc": 0.9789875835721107,
+   "molecules": 3
+  },
+  {
+   "token": "acorn",
+   "auc": 0.98005698005698,
+   "molecules": 1
+  },
+  {
+   "token": "bake potato",
+   "auc": 0.98005698005698,
+   "molecules": 1
+  },
+  {
+   "token": "buchu",
+   "auc": 0.98005698005698,
+   "molecules": 1
+  },
+  {
+   "token": "fennel",
+   "auc": 0.98005698005698,
+   "molecules": 1
+  },
+  {
+   "token": "potato bin",
+   "auc": 0.98005698005698,
+   "molecules": 1
+  },
+  {
+   "token": "prune",
+   "auc": 0.98005698005698,
+   "molecules": 1
+  },
+  {
+   "token": "tallow",
+   "auc": 0.98005698005698,
+   "molecules": 1
+  },
+  {
+   "token": "coffee",
+   "auc": 0.9805383022774328,
+   "molecules": 7
+  },
+  {
+   "token": "spearmint",
+   "auc": 0.9814285714285714,
+   "molecules": 2
+  },
+  {
+   "token": "smoke",
+   "auc": 0.9829059829059829,
+   "molecules": 1
+  },
+  {
+   "token": "sugar burn sugar",
+   "auc": 0.9829059829059829,
+   "molecules": 1
+  },
+  {
+   "token": "pepper",
+   "auc": 0.9837631327602674,
+   "molecules": 3
+  },
+  {
+   "token": "cognac",
+   "auc": 0.9841954022988506,
+   "molecules": 4
+  },
+  {
+   "token": "vanillin",
+   "auc": 0.9842857142857142,
+   "molecules": 2
+  },
+  {
+   "token": "ammonical",
+   "auc": 0.9856733524355301,
+   "molecules": 3
+  },
+  {
+   "token": "bready",
+   "auc": 0.9856733524355301,
+   "molecules": 3
+  },
+  {
+   "token": "banana peel",
+   "auc": 0.9857549857549858,
+   "molecules": 1
+  },
+  {
+   "token": "beef",
+   "auc": 0.9857549857549858,
+   "molecules": 1
+  },
+  {
+   "token": "fecal",
+   "auc": 0.9857549857549858,
+   "molecules": 1
+  },
+  {
+   "token": "mimosa",
+   "auc": 0.9857549857549858,
+   "molecules": 1
+  },
+  {
+   "token": "petal",
+   "auc": 0.9857549857549858,
+   "molecules": 1
+  },
+  {
+   "token": "cocoa",
+   "auc": 0.9875835721107927,
+   "molecules": 3
+  },
+  {
+   "token": "garlic",
+   "auc": 0.987991718426501,
+   "molecules": 7
+  },
+  {
+   "token": "catty",
+   "auc": 0.9886039886039886,
+   "molecules": 1
+  },
+  {
+   "token": "moth ball",
+   "auc": 0.9886039886039886,
+   "molecules": 1
+  },
+  {
+   "token": "peppermint",
+   "auc": 0.9886039886039886,
+   "molecules": 1
+  },
+  {
+   "token": "rue",
+   "auc": 0.9886039886039886,
+   "molecules": 1
+  },
+  {
+   "token": "toasty",
+   "auc": 0.9886039886039886,
+   "molecules": 1
+  },
+  {
+   "token": "cantaloupe",
+   "auc": 0.9914529914529915,
+   "molecules": 1
+  },
+  {
+   "token": "coffee roast coffee",
+   "auc": 0.9914529914529915,
+   "molecules": 1
+  },
+  {
+   "token": "fungal",
+   "auc": 0.9914529914529915,
+   "molecules": 1
+  },
+  {
+   "token": "nut skin",
+   "auc": 0.9914529914529915,
+   "molecules": 1
+  },
+  {
+   "token": "potato bake potato",
+   "auc": 0.9914529914529915,
+   "molecules": 1
+  },
+  {
+   "token": "sawdust",
+   "auc": 0.9914529914529915,
+   "molecules": 1
+  },
+  {
+   "token": "scallion",
+   "auc": 0.9914529914529915,
+   "molecules": 1
+  },
+  {
+   "token": "skunk",
+   "auc": 0.9914529914529915,
+   "molecules": 1
+  },
+  {
+   "token": "sugar",
+   "auc": 0.9914529914529915,
+   "molecules": 1
+  },
+  {
+   "token": "cinnamon",
+   "auc": 0.9928571428571429,
+   "molecules": 2
+  },
+  {
+   "token": "cashew",
+   "auc": 0.9943019943019943,
+   "molecules": 1
+  },
+  {
+   "token": "heliotrope",
+   "auc": 0.9943019943019943,
+   "molecules": 1
+  },
+  {
+   "token": "patchouli",
+   "auc": 0.9943019943019943,
+   "molecules": 1
+  },
+  {
+   "token": "seafood",
+   "auc": 0.9943019943019943,
+   "molecules": 1
+  },
+  {
+   "token": "spruce",
+   "auc": 0.9943019943019943,
+   "molecules": 1
+  },
+  {
+   "token": "thyme",
+   "auc": 0.9943019943019943,
+   "molecules": 1
+  },
+  {
+   "token": "cinnamyl",
+   "auc": 0.9952244508118434,
+   "molecules": 3
+  },
+  {
+   "token": "currant bud black currant bud",
+   "auc": 0.9971509971509972,
+   "molecules": 1
+  },
+  {
+   "token": "onion green onion",
+   "auc": 0.9971509971509972,
+   "molecules": 1
+  },
+  {
+   "token": "sandalwood",
+   "auc": 0.9971509971509972,
+   "molecules": 1
+  },
+  {
+   "token": "maple",
+   "auc": 0.9990448901623686,
+   "molecules": 3
+  },
+  {
+   "token": "alkane",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "almond bitter almond",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "anise",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "apple skin",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "bitter",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "blueberry",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "borneol",
    "auc": 1.0,
    "molecules": 1
   },
@@ -108,7 +1721,42 @@
    "molecules": 1
   },
   {
-   "token": "borneol",
+   "token": "fruit dry fruit",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "gasoline",
+   "auc": 1.0,
+   "molecules": 3
+  },
+  {
+   "token": "goat",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "goaty",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "honeydew",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "mentholic",
+   "auc": 1.0,
+   "molecules": 2
+  },
+  {
+   "token": "petitgrain",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "rum",
    "auc": 1.0,
    "molecules": 1
   }

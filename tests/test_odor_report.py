@@ -146,3 +146,24 @@ def test_the_generation_table_shows_how_close_the_nearest_training_molecule_is()
 def test_the_per_token_table_names_the_tokens_it_ranks_worst():
     rows = [{"token": "almond bitter almond", "auc": 0.41, "molecules": 2}]
     assert "| almond bitter almond | 0.410 | 2 |" in report.per_token_table(rows)
+
+
+def test_the_baseline_table_puts_the_two_models_side_by_side():
+    baseline = {"splits": {"test": {"roc_auc_macro": 0.736, "average_precision_macro": 0.261}}}
+    classifier = {"test": {"roc_auc_macro": 0.811, "average_precision_macro": 0.268}}
+    assert "| test | 0.736 | 0.811 | 0.261 | 0.268 |" in report.baseline_table(baseline, classifier)
+
+
+def test_the_data_table_counts_what_the_run_learned_from():
+    eda = {
+        "molecules": 7516,
+        "splits": {"train": 6344, "validation": 352, "test": 352, "dream": 468},
+        "odor_tokens": 890,
+        "odor_tokens_on_one_molecule": 211,
+        "tokens_per_molecule": {"median": 4.0, "mean": 5.8, "most": 34},
+        "sources": {"goodscents": 4247},
+        "weight": {"median": 174.2, "share_over_350": 0.015, "heaviest": 2633.0},
+    }
+    table = report.eda_table(eda)
+    assert "| molecules | 7,516: 6,344 train, 352 validation, 352 test, 468 DREAM |" in table
+    assert "| odor tokens | 890, 211 on a single molecule |" in table

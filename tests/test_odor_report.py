@@ -146,3 +146,9 @@ def test_the_generation_table_shows_how_close_the_nearest_training_molecule_is()
 def test_the_per_token_table_names_the_tokens_it_ranks_worst():
     rows = [{"token": "almond bitter almond", "auc": 0.41, "molecules": 2}]
     assert "| almond bitter almond | 0.410 | 2 |" in report.per_token_table(rows)
+
+
+def test_the_baseline_table_puts_the_two_models_side_by_side():
+    baseline = {"splits": {"test": {"roc_auc_macro": 0.736}}}
+    classifier = {"test": {"roc_auc_macro": 0.811}}
+    assert "| test | 0.736 | 0.811 | +0.075 |" in report.baseline_table(baseline, classifier)

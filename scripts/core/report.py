@@ -49,6 +49,24 @@ def classifier_table(evaluations: dict[str, dict]) -> str:
     return "\n".join(rows)
 
 
+def read_baseline() -> dict | None:
+    """The ridge baseline, if it has been run. It is written by ``scripts.analysis.baseline``."""
+    path = OUTPUT_DIR.parent / "analysis" / "baseline.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
+def baseline_table(baseline: dict, classifier: dict) -> str:
+    """The ridge baseline beside the transformer, split by split."""
+    rows = ["| split | ridge on Morgan bits | the transformer | difference |", "|---|---|---|---|"]
+    for split, found in baseline["splits"].items():
+        neural = classifier.get(split, {}).get("roc_auc_macro")
+        ridge = found.get("roc_auc_macro")
+        if neural is None or ridge is None:
+            continue
+        rows.append(f"| {split} | {ridge:.3f} | {neural:.3f} | {neural - ridge:+.3f} |")
+    return "\n".join(rows)
+
+
 def results_table(evaluations: dict[str, dict]) -> str:
     rows = [
         "| split | molecules | loss | perplexity | gain over no odor tokens | odor tokens help |",
@@ -116,6 +134,9 @@ def main() -> int:
     if classifier:
         text += ["", "## The classifier", "", classifier_table(classifier)]
         shown = classifier.get("test", next(iter(classifier.values()), {}))
+        baseline = read_baseline()
+        if baseline:
+            text += ["", "## The baseline", "", baseline_table(baseline, classifier)]
         if shown.get("per_token_worst"):
             text += [
                 "",

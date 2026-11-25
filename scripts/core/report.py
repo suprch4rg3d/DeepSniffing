@@ -89,14 +89,19 @@ def main() -> int:
     folder = OUTPUT_DIR / "report"
     folder.mkdir(exist_ok=True)
     text = ["# Results", "", results_table(evaluations)]
+    generation = None
     for split, result in evaluations.items():
         own_and_none = result["conditioning"]["per_molecule"]
         gain_histogram(
             own_and_none["own"], own_and_none["none"], folder / f"gain_{split}.png", split
         )
-        if result.get("generation"):
-            generation_bars(result["generation"], folder / f"generation_{split}.png", split)
-            text += ["", f"## What it wrote ({split})", "", generation_table(result["generation"])]
+        # What the model writes depends on its requests and the seed, not on which molecules were held out,
+        # so every split answers with the same sample. It is one result, and it is shown once.
+        if generation is None:
+            generation = result.get("generation")
+    if generation:
+        generation_bars(generation, folder / "generation.png", "the model")
+        text += ["", "## What it wrote", "", generation_table(generation)]
     if classifier:
         text += ["", "## The classifier", "", classifier_table(classifier)]
     (folder / "results.md").write_text("\n".join(text) + "\n", encoding="utf-8")

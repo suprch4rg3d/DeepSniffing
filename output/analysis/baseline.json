@@ -1,0 +1,24 @@
+{
+ "alpha": 1.0,
+ "molecules": 6344,
+ "splits": {
+  "validation": {
+   "molecules": 352,
+   "roc_auc_macro": 0.7250090606241566,
+   "average_precision_macro": 0.22261400810548615,
+   "odor_tokens_scorable": 350
+  },
+  "test": {
+   "molecules": 352,
+   "roc_auc_macro": 0.736149641730439,
+   "average_precision_macro": 0.2606801186481528,
+   "odor_tokens_scorable": 305
+  },
+  "dream": {
+   "molecules": 468,
+   "roc_auc_macro": 0.6703464765376335,
+   "average_precision_macro": 0.1777365135156334,
+   "odor_tokens_scorable": 522
+  }
+ }
+}

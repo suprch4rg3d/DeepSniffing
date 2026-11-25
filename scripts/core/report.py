@@ -49,6 +49,55 @@ def classifier_table(evaluations: dict[str, dict]) -> str:
     return "\n".join(rows)
 
 
+def read_baseline() -> dict | None:
+    """The ridge baseline, if it has been run. It is written by ``scripts.analysis.baseline``."""
+    path = OUTPUT_DIR.parent / "analysis" / "baseline.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
+def read_eda() -> dict | None:
+    """The data summary, if it has been built. It is written by ``scripts.analysis.eda``."""
+    path = OUTPUT_DIR.parent / "analysis" / "eda.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
+def eda_table(eda: dict) -> str:
+    """The size and shape of the data, before any result is read."""
+    splits = eda["splits"]
+    per = eda["tokens_per_molecule"]
+    rows = [
+        "| measure | value |",
+        "|---|---|",
+        f"| molecules | {eda['molecules']:,}: {splits.get('train', 0):,} train, "
+        f"{splits.get('validation', 0)} validation, {splits.get('test', 0)} test, "
+        f"{splits.get('dream', 0)} DREAM |",
+        f"| odor tokens | {eda['odor_tokens']}, {eda['odor_tokens_on_one_molecule']} on a single molecule |",
+        f"| odor tokens per molecule | median {per['median']:.0f}, mean {per['mean']:.1f}, most {per['most']} |",
+        f"| sources | {len(eda['sources'])} |",
+        f"| weight | median {eda['weight']['median']:.0f} Da, "
+        f"{eda['weight']['share_over_350']:.1%} over 350 |",
+    ]
+    return "\n".join(rows)
+
+
+def baseline_table(baseline: dict, classifier: dict) -> str:
+    """The ridge baseline beside the transformer, on both numbers that matter: ranking and precision."""
+    rows = [
+        "| split | ridge ROC-AUC | decoder ROC-AUC | ridge average precision | decoder average precision |",
+        "|---|---|---|---|---|",
+    ]
+    for split, found in baseline["splits"].items():
+        neural = classifier.get(split, {})
+        if neural.get("roc_auc_macro") is None or found.get("roc_auc_macro") is None:
+            continue
+        rows.append(
+            f"| {split} | {found['roc_auc_macro']:.3f} | {neural['roc_auc_macro']:.3f} "
+            f"| {found['average_precision_macro']:.3f} "
+            f"| {neural['average_precision_macro']:.3f} |"
+        )
+    return "\n".join(rows)
+
+
 def results_table(evaluations: dict[str, dict]) -> str:
     rows = [
         "| split | molecules | loss | perplexity | gain over no odor tokens | odor tokens help |",
@@ -100,6 +149,9 @@ def main() -> int:
     folder = OUTPUT_DIR / "report"
     folder.mkdir(exist_ok=True)
     text = ["# Results", "", results_table(evaluations)]
+    eda = read_eda()
+    if eda:
+        text += ["", "## The data", "", eda_table(eda)]
     generation = None
     for split, result in evaluations.items():
         own_and_none = result["conditioning"]["per_molecule"]
@@ -116,12 +168,15 @@ def main() -> int:
     if classifier:
         text += ["", "## The classifier", "", classifier_table(classifier)]
         shown = classifier.get("test", next(iter(classifier.values()), {}))
-        if shown.get("per_token_worst"):
+        baseline = read_baseline()
+        if baseline:
+            text += ["", "## The baseline", "", baseline_table(baseline, classifier)]
+        if shown.get("per_token"):
             text += [
                 "",
                 "### The ten odor tokens it ranks worst on the test molecules",
                 "",
-                per_token_table(shown["per_token_worst"]),
+                per_token_table(shown["per_token"][:10]),
             ]
     (folder / "results.md").write_text("\n".join(text) + "\n", encoding="utf-8")
     print(f"wrote {folder / 'results.md'}")

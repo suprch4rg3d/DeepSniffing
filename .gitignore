@@ -265,6 +265,7 @@ data/processed/odor_dev/
 # Trained models and the logs of their runs, except the pretrained decoder that steps 2 and 3 read
 output/*
 !output/odor/
+!output/analysis/
 output/odor/*
 !output/odor/evaluation_*.json
 !output/odor/train.log

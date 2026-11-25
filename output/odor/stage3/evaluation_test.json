@@ -7,5 +7,110 @@
  "average_precision_macro": 0.26839437571600017,
  "precision_at_5": 0.3806818127632141,
  "precision_at_own_count": 0.3992100954055786,
- "molecules": 352
+ "molecules": 352,
+ "odor_tokens_scored": 305,
+ "per_token_worst": [
+  {
+   "token": "linden",
+   "auc": 0.042735042735042694,
+   "molecules": 1
+  },
+  {
+   "token": "linden flower",
+   "auc": 0.056980056980056926,
+   "molecules": 1
+  },
+  {
+   "token": "powerful",
+   "auc": 0.06837606837606836,
+   "molecules": 1
+  },
+  {
+   "token": "fat",
+   "auc": 0.1339031339031339,
+   "molecules": 1
+  },
+  {
+   "token": "concord grape",
+   "auc": 0.15384615384615385,
+   "molecules": 1
+  },
+  {
+   "token": "sea",
+   "auc": 0.19285714285714284,
+   "molecules": 2
+  },
+  {
+   "token": "opoponax",
+   "auc": 0.19714285714285712,
+   "molecules": 2
+  },
+  {
+   "token": "bean green bean",
+   "auc": 0.19943019943019946,
+   "molecules": 1
+  },
+  {
+   "token": "tart",
+   "auc": 0.22507122507122512,
+   "molecules": 1
+  },
+  {
+   "token": "peppery",
+   "auc": 0.2535612535612536,
+   "molecules": 1
+  }
+ ],
+ "per_token_best": [
+  {
+   "token": "skunk",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "popcorn",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "pear skin",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "orchid",
+   "auc": 1.0,
+   "molecules": 2
+  },
+  {
+   "token": "orange blossom",
+   "auc": 1.0,
+   "molecules": 2
+  },
+  {
+   "token": "onion green onion",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "obnoxious",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "metal",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "malty",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "licorice black licorice",
+   "auc": 1.0,
+   "molecules": 1
+  }
+ ]
 }

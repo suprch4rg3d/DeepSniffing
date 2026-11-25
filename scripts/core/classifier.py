@@ -254,8 +254,7 @@ def evaluate(vocabulary: Vocabulary, split: str, tag: str | None = None) -> dict
     report["molecules"] = len(truth)
     per_token = per_token_scores(scores, truth.astype(np.int8), vocabulary.odor_tokens)
     report["odor_tokens_scored"] = len(per_token)
-    report["per_token_worst"] = per_token[:10]
-    report["per_token_best"] = per_token[-10:][::-1]
+    report["per_token"] = per_token
     return report
 
 

@@ -165,12 +165,12 @@ def main() -> int:
         baseline = read_baseline()
         if baseline:
             text += ["", "## The baseline", "", baseline_table(baseline, classifier)]
-        if shown.get("per_token_worst"):
+        if shown.get("per_token"):
             text += [
                 "",
                 "### The ten odor tokens it ranks worst on the test molecules",
                 "",
-                per_token_table(shown["per_token_worst"]),
+                per_token_table(shown["per_token"][:10]),
             ]
     (folder / "results.md").write_text("\n".join(text) + "\n", encoding="utf-8")
     print(f"wrote {folder / 'results.md'}")

@@ -1,14 +1,14 @@
 # DeepSniffing
 
-Computers already see, hear, and talk — we're teaching them to _smell_.
+Computers already see, hear, and talk. We're teaching them to _smell_.
 
 Predicting odors from molecular structures, and generating molecules from odors.
-Semester project for MAI642 — Deep Learning.
+Semester project for MAI642 Deep Learning.
 
 ## Project overview
 
 DeepSniffing explores the link between a molecule's structure and how it smells, in both directions. It is a team
-project for MAI642 — Deep Learning.
+project for MAI642 Deep Learning.
 
 A small decoder-only transformer (a GPT) reads and writes molecules as text. A molecule is written as a SELFIES
 string, which is cut into **molecule tokens**, and an odor such as `fruity` or `musk` is one **odor token**. The
@@ -93,7 +93,7 @@ DeepSniffing/
 ## Requirements
 
 - Python 3.13 (>=3.13, < 3.14 as declared in `pyproject.toml`)
-- [Poetry](https://python-poetry.org) (2.x) — the project uses poetry for dependency management and installs
+- [Poetry](https://python-poetry.org) (2.x). The project uses Poetry for dependency management and installs
   itself in editable mode, so the `ds-*` commands below run the working tree.
 - A GPU is not required but makes pretraining practical: it takes about three hours on an RTX 3060.
 - About 25 GB of disk for the PubChem download and the files built from it.
@@ -164,22 +164,22 @@ poetry run ds-build        # download PubChem, then build every table and the pa
 
 The scripts create (in `data/processed/odor/` unless a path says otherwise):
 
-- `molecules.csv` — one row per molecule with odor tokens: `cid`, `smiles`, the `sources` that name it, and its
+- `molecules.csv`: one row per molecule with odor tokens: `cid`, `smiles`, the `sources` that name it, and its
   `odor_tokens` joined by `;` (7,516 molecules).
-- `odor_tokens.csv` — one row per odor token: how many molecules and sources carry it, and the spellings of the
+- `odor_tokens.csv`: one row per odor token: how many molecules and sources carry it, and the spellings of the
   sources that were merged into it (`fruity` has 2,713 molecules and the spellings `fruity;fruit`).
-- `dropped.csv` — every source row that was left out, with the reason (for example, PubChem has no CID for it).
-- `odor_dataset.csv` — the fine-tuning set: `cid`, `smiles`, `odor_tokens`, `sources`, `selfies` and `split`
+- `dropped.csv`: every source row that was left out, with the reason (for example, PubChem has no CID for it).
+- `odor_dataset.csv`: the fine-tuning set: `cid`, `smiles`, `odor_tokens`, `sources`, `selfies` and `split`
   (6,344 train, 352 validation, 352 test and 468 dream).
-- `structures.csv` — the pretraining set: `cid`, `smiles`, `selfies`, `source` and `split` (3,422,276 train and 5,017
+- `structures.csv`: the pretraining set: `cid`, `smiles`, `selfies`, `source` and `split` (3,422,276 train and 5,017
   validation molecules; the source is `pubchem`, `odor` for the 6,344 training molecules of the fine-tuning set, or
   `other`).
-- `vocabulary.json` — the 2,077 tokens: 6 special, 1,181 molecule tokens and 890 odor tokens.
-- `stage1_tokens.npy`, `stage1_offsets.npy`, `stage1_split.npy` and `stage1_tokens.json` — the pretraining molecules
+- `vocabulary.json`: the 2,077 tokens: 6 special, 1,181 molecule tokens and 890 odor tokens.
+- `stage1_tokens.npy`, `stage1_offsets.npy`, `stage1_split.npy` and `stage1_tokens.json`: the pretraining molecules
   as token numbers, where each one starts, its split, and the vocabulary they were packed with.
-- `pubchem_light.csv`, `pubchem_light.npy` and `pubchem_structures.csv` — the intermediate PubChem files: every
+- `pubchem_light.csv`, `pubchem_light.npy` and `pubchem_structures.csv`: the intermediate PubChem files: every
   compound of 350 Da or less, the mask that selects them, and the 3.4 million sampled and converted.
-- `data/raw/pubchem/odor_pubchem.csv` — the cache of PubChem answers for the odor molecules, so a rerun needs no
+- `data/raw/pubchem/odor_pubchem.csv`: the cache of PubChem answers for the odor molecules, so a rerun needs no
   network.
 
 In the tables, `selfies` is the molecule as the text the model reads and writes, made from the structure in `smiles`. A SELFIES string is cut into molecule tokens; an odor token is a term such as

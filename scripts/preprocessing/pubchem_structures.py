@@ -21,8 +21,8 @@ The work is done in four steps, each of which is skipped if what it makes is alr
 A molecule is left out, and counted, when RDKit cannot read its SMILES, when SELFIES cannot write it, when
 it is longer than the model can read at all (``MAX_MOLECULE_TOKENS``; the decoder has a position for 1024 molecule
 molecule tokens), or when it is too heavy to be a molecule that smells (``MAX_WEIGHT``). To be smelled at all a
-molecule has to evaporate and reach the nose, and heavy molecules do not; 300 or so is a rule of thumb
-rather than a wall, so the limit here is taken from the molecules we have rather than from the rule: of the
+molecule has to evaporate and reach the nose, and heavy molecules do not; 300 or so is only a rule of thumb,
+so the limit here comes from the molecules we have: of the
 7,516 with odor tokens, 98.5% weigh 350 or less and the median weighs 174.
 
 Nothing is left out for the elements it is made of: the odor molecules themselves hold sodium, iron,
@@ -214,11 +214,10 @@ def _select_piece(job: tuple[Path, int, int, Path, Path]) -> int:
 def chosen(cid: int, cutoff: int) -> bool:
     """Whether this molecule is in the sample.
 
-    The CID is mixed first and the mix compared with ``cutoff``, rather than taking every n-th CID:
-    PubChem hands CIDs out in the order compounds were registered, so a batch of ten thousand analogues
-    deposited together sits in one run of consecutive numbers, and every n-th of them is not an
-    independent draw. A checksum of the number has nothing to do with that order, and gives the same
-    sample every time it is run.
+    The CID is mixed first and the mix compared with ``cutoff``. Taking every n-th CID would not be an
+    independent draw: PubChem hands CIDs out in the order compounds were registered, so a batch of ten
+    thousand analogues deposited together sits in one run of consecutive numbers. A checksum of the number
+    has nothing to do with that order, and gives the same sample every time it is run.
     """
     return mixed(cid) < cutoff
 

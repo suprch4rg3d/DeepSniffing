@@ -1,4 +1,4 @@
-"""The data the two stages learn from, as numbers rather than prose.
+"""The data the two stages learn from, in counts and shares.
 
     python -m scripts.analysis.eda
 

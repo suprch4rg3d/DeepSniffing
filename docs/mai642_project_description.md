@@ -82,8 +82,8 @@ official DREAM Q2 metric. It worked. The model reproduced a Q2 score of 6.896 on
 molecule test set, against 8.87 for the winning entry of the challenge and 9.17 for the aggregate of
 all teams, and it did so with a clean split, a test suite and a continuous integration pipeline.
 
-Feedback on the project was that this read as a machine learning project rather than a deep learning
-one. That judgement can be argued: the DREAM challenge itself was won by gradient boosting on
+Feedback said the project read as machine learning, which was not what the course asked for. That
+judgement can be argued: the DREAM challenge itself was won by gradient boosting on
 descriptors, and a task that the best classical models solve is not made deep by wrapping it in a
 network. But the criticism pointed at something real. The deep model was doing the easy half. The
 interesting learning problem, the one that needs a network with millions of parameters and a corpus

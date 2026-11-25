@@ -164,7 +164,7 @@ def test_a_cutoff_takes_about_that_share_and_the_same_one_every_time(tmp_path):
     )
     source.SHARDS_DIR = tmp_path / "parts"
     half, _, _ = source.build(light, tmp_path / "half.csv", cutoff=source.ALL // 2, workers=1)
-    assert 850 < half < 1150  # about a half of 2000, as a draw rather than exactly
+    assert 850 < half < 1150  # about a half of 2000, drawn at random, not exactly
     again, _, _ = source.build(light, tmp_path / "again.csv", cutoff=source.ALL // 2, workers=1)
     assert again == half  # the same sample every run
     everything, _, _ = source.build(light, tmp_path / "all.csv", workers=1)

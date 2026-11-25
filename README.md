@@ -75,6 +75,7 @@ DeepSniffing/
 ├── ODOR_TRAINING.md                            Data, training, scoring, results and limits
 ├── pyproject.toml, poetry.lock                  Poetry project and locked versions
 ├── requirements.txt                            Pip dependency list
+├── LICENSE                                     MIT, for the code
 └── README.md                                   Setup, data preparation, training and analysis
 ```
 
@@ -252,6 +253,14 @@ attention budgets. None of them stores outputs.
 ## Glossary
 
 The terms used here, from molecule tokens to macro ROC-AUC, are in [docs/glossary.md](docs/glossary.md).
+
+## License
+
+The code is MIT, Copyright 2026 Emmanouil Oikonomou, Konstantin Krasovitskiy and Anastasia Kyriakou. The full text
+is in [LICENSE](LICENSE).
+
+The tables under `data/processed/` come from Pyrfume's sources and PubChem and keep the terms of those sources. The
+trained weights under `output/odor/` are provided as they are, with no warranty.
 
 ## Project description
 

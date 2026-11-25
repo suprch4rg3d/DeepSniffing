@@ -22,6 +22,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
+from matplotlib.lines import Line2D  # noqa: E402
 
 from scripts.core import classifier, generator, history, pretrain  # noqa: E402
 
@@ -190,6 +191,102 @@ def odor_tsne_figure(
     figure.suptitle(
         "The 890 odor-token embeddings by t-SNE, the forty most frequent named", fontsize=14
     )
+    figure.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(figure)
+
+
+def hidden_states_figure(report: dict, tokens: list[str], path: Path) -> None:
+    """The same molecules in three settings on shared axes, the request's movement, and the votes it produces."""
+    figure = plt.figure(figsize=(15, 9))
+    grid = figure.add_gridspec(2, 3, height_ratios=(1.05, 0.95))
+    panels = [figure.add_subplot(grid[0, column]) for column in range(3)]
+    colours = plt.get_cmap("tab10")
+    labels = np.array(report["labels"])
+    points = {name: np.array(report["coordinates"][name]) for name in ("own", "empty", "frozen")}
+    low = np.min([values.min(axis=0) for values in points.values()], axis=0)
+    high = np.max([values.max(axis=0) for values in points.values()], axis=0)
+    for ax, name, title in zip(
+        panels,
+        ("own", "empty", "frozen"),
+        ("own request", "empty request", "pretrained decoder"),
+        strict=True,
+    ):
+        for index, token in enumerate(tokens):
+            chosen = labels == index
+            ax.scatter(
+                points[name][chosen, 0],
+                points[name][chosen, 1],
+                s=16,
+                color=colours(index),
+                label=token,
+            )
+        ax.set_title(
+            f"{title}\nkNN {report['knn_accuracy'][name]:.2f}, silhouette "
+            f"{report['silhouette'][name]:+.3f}",
+            fontsize=10,
+        )
+        ax.set_xlim(low[0] - 0.05, high[0] + 0.05)
+        ax.set_ylim(low[1] - 0.05, high[1] + 0.05)
+        ax.set_xticks([])
+        ax.set_yticks([])
+    panels[0].legend(frameon=False, fontsize=7, markerscale=1.5)
+
+    movement = figure.add_subplot(grid[1, :2])
+    for index, _token in enumerate(tokens):
+        chosen = np.where(labels == index)[0]
+        for row in chosen:
+            movement.annotate(
+                "",
+                xy=points["own"][row],
+                xytext=points["empty"][row],
+                arrowprops={"arrowstyle": "->", "color": colours(index), "alpha": 0.55, "lw": 0.8},
+            )
+        movement.scatter(
+            points["own"][chosen, 0],
+            points["own"][chosen, 1],
+            s=10,
+            color=colours(index),
+            alpha=0.7,
+        )
+        start = points["empty"][chosen].mean(axis=0)
+        end = points["own"][chosen].mean(axis=0)
+        movement.annotate(
+            "",
+            xy=end,
+            xytext=start,
+            arrowprops={"arrowstyle": "-|>", "color": colours(index), "lw": 2.0},
+        )
+
+    movement.set_xlim(low[0] - 0.05, high[0] + 0.05)
+    movement.set_ylim(low[1] - 0.05, high[1] + 0.05)
+    movement.set_title(
+        f"What the request moves: empty to own, median {report['displacement']:.2f} in 256 dimensions",
+        fontsize=10,
+    )
+    handles = [
+        Line2D([0], [0], marker="o", linestyle="", color=colours(index), label=token)
+        for index, token in enumerate(tokens)
+    ]
+    movement.legend(handles=handles, loc="upper right", fontsize=8, frameon=False, ncols=2)
+    movement.set_xticks([])
+    movement.set_yticks([])
+
+    votes = figure.add_subplot(grid[1, 2])
+    confusion = np.array(report["confusion"])
+    votes.imshow(confusion, cmap="Blues")
+    for row in range(confusion.shape[0]):
+        for column in range(confusion.shape[1]):
+            if confusion[row, column]:
+                votes.text(
+                    column, row, str(confusion[row, column]), ha="center", va="center", fontsize=7
+                )
+    votes.set_xticks(range(len(tokens)), tokens, rotation=90, fontsize=7)
+    votes.set_yticks(range(len(tokens)), tokens, fontsize=7)
+    votes.set_xlabel("nearest neighbour vote")
+    votes.set_title("Own request: where the votes go", fontsize=10)
+
+    figure.suptitle("The state of a molecule, coloured by the odor token it carries", fontsize=13)
+    figure.tight_layout(rect=(0, 0, 1, 0.94))
     figure.savefig(path, dpi=200, bbox_inches="tight")
     plt.close(figure)
 

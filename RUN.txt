@@ -1,0 +1,6 @@
+commit: e33cda606885d5823288302c8cfa3d7135b1e38a
+date: 2026-11-25T03:32:42+00:00
+gpu: NVIDIA L4
+torch: 2.14.1
+rdkit: 2026.9.1
+selfies: 2.2.0

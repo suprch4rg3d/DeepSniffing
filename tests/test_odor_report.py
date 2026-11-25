@@ -79,7 +79,7 @@ def test_the_report_has_a_row_for_each_evaluated_split_and_its_figures(monkeypat
     assert {p.name for p in folder.iterdir()} == {
         "results.md",
         "gain_test.png",
-        "generation_test.png",
+        "generation.png",
     }
 
 

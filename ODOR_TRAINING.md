@@ -183,24 +183,26 @@ already right about its request and guidance is left off.
 apparently because an epoch no longer held the classifier's batches and so had about half the steps. With 160 epochs it scores
 **0.7057**, lower than both by more than the noise (paired against the 80-epoch run: −0.0233 ± 0.0080).
 
-**The final models**, settings fixed on validation:
+**The final models**, settings fixed on validation. The numbers are from the Colab run recorded in `RUN.txt`:
+commit `e33cda6`, an L4, torch 2.14.1, rdkit 2026.9.1. An earlier run, before the fix that removed the twelve
+DREAM molecules with no odor tokens from the pretraining, gave 0.7062, 0.7096 and 0.6759; that is what the
+comparisons above refer to, and only the validation, test and classifier numbers are comparable with it.
 
 | held-out set | molecules | loss | perplexity | gain over no odor tokens | odor tokens help |
 |---|---|---|---|---|---|
-| validation | 352 | 0.7062 | 2.03 | +0.224 ± 0.020 | 89% |
-| **test** | 352 | **0.7096** | 2.03 | **+0.215 ± 0.024** | 89% |
-| **DREAM** | 468 | **0.6759** | 1.97 | **+0.323 ± 0.019** | 97% |
+| validation | 352 | 0.7112 | 2.04 | +0.218 ± 0.019 | 90% |
+| **test** | 352 | **0.7124** | 2.04 | **+0.212 ± 0.020** | 90% |
+| **DREAM** | 468 | **0.6972** | 2.01 | **+0.298 ± 0.016** | 97% |
 
-The share of molecule tokens ranked first, on the validation molecules at the last epoch, is 0.774 with the odor
-tokens and 0.743 without. What the generator writes, 200 molecules a request, for `fruity`, `woody`, `musk`,
-`sulfurous` and two with `minty`: valid 1.00, unique 0.85 to 0.99, novel 0.69 to 0.90, median weight 136 to 238 and
-0 to 2% above 350 (the full table is in `output/odor/report/results.md`).
+What the generator writes, 200 molecules a request, for `fruity`, `woody`, `musk`, `sulfurous` and two with
+`minty`: valid 1.00, unique 0.89 to 1.00, novel 0.70 to 0.86, median weight 148 to 228 and 0 to 2% above 350 (the
+full table is in `output/odor/report/results.md`).
 
 | classifier | molecules | ROC-AUC | average precision |
 |---|---|---|---|
-| validation | 352 | 0.832 | 0.228 |
-| test | 352 | 0.812 | 0.272 |
-| DREAM | 468 | 0.779 | 0.210 |
+| validation | 352 | 0.832 | 0.224 |
+| test | 352 | 0.811 | 0.268 |
+| DREAM | 468 | 0.776 | 0.224 |
 
 **Training on the validation molecules too** (`--include-validation --tag full`, which keeps the run in `stage2_full`
 and `stage3_full`) adds the 352 validation molecules to the training once the settings are fixed. Scored on the molecules

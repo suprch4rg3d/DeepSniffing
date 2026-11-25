@@ -9,7 +9,12 @@ scripts.core.plots`` draws the curves of a run from its ``history.csv``; ``repor
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
+
+# Colab exports an inline backend that the environment's matplotlib does not have, and matplotlib refuses to
+# import at all when MPLBACKEND names it. Every figure here is written to a file, so Agg is right everywhere.
+os.environ["MPLBACKEND"] = "Agg"
 
 import matplotlib
 

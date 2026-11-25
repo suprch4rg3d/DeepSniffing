@@ -55,6 +55,31 @@ def read_baseline() -> dict | None:
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
 
 
+def read_eda() -> dict | None:
+    """The data summary, if it has been built. It is written by ``scripts.analysis.eda``."""
+    path = OUTPUT_DIR.parent / "analysis" / "eda.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
+def eda_table(eda: dict) -> str:
+    """The size and shape of the data, before any result is read."""
+    splits = eda["splits"]
+    per = eda["tokens_per_molecule"]
+    rows = [
+        "| measure | value |",
+        "|---|---|",
+        f"| molecules | {eda['molecules']:,}: {splits.get('train', 0):,} train, "
+        f"{splits.get('validation', 0)} validation, {splits.get('test', 0)} test, "
+        f"{splits.get('dream', 0)} DREAM |",
+        f"| odor tokens | {eda['odor_tokens']}, {eda['odor_tokens_on_one_molecule']} on a single molecule |",
+        f"| odor tokens per molecule | median {per['median']:.0f}, mean {per['mean']:.1f}, most {per['most']} |",
+        f"| sources | {len(eda['sources'])} |",
+        f"| weight | median {eda['weight']['median']:.0f} Da, "
+        f"{eda['weight']['share_over_350']:.1%} over 350 |",
+    ]
+    return "\n".join(rows)
+
+
 def baseline_table(baseline: dict, classifier: dict) -> str:
     """The ridge baseline beside the transformer, split by split."""
     rows = ["| split | ridge on Morgan bits | the transformer | difference |", "|---|---|---|---|"]
@@ -118,6 +143,9 @@ def main() -> int:
     folder = OUTPUT_DIR / "report"
     folder.mkdir(exist_ok=True)
     text = ["# Results", "", results_table(evaluations)]
+    eda = read_eda()
+    if eda:
+        text += ["", "## The data", "", eda_table(eda)]
     generation = None
     for split, result in evaluations.items():
         own_and_none = result["conditioning"]["per_molecule"]

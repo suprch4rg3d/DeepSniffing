@@ -120,6 +120,115 @@ def generation_bars(generation: dict, path: Path, title: str) -> None:
     plt.close(figure)
 
 
+def odor_map_figure(
+    before: np.ndarray, after: np.ndarray, tokens: list[str], positions: list[int], path: Path
+) -> None:
+    """The same 890 odor tokens in two dimensions before and after step 2, the forty most frequent named."""
+    figure, axes = plt.subplots(2, 1, figsize=(11, 12))
+    for ax, coordinates, title in zip(
+        axes, (before, after), ("before step 2", "after step 2"), strict=True
+    ):
+        span = coordinates.max(axis=0) - coordinates.min(axis=0)
+        middle = coordinates.mean(axis=0)
+        ax.scatter(coordinates[:, 0], coordinates[:, 1], s=16, color="#B4C7E7", alpha=0.85)
+        for name, position in zip(tokens, positions, strict=True):
+            point = coordinates[position]
+            direction = point - middle
+            length = float(np.linalg.norm(direction))
+            away = direction / length if length else np.array([0.0, 1.0])
+            ax.annotate(
+                name,
+                point,
+                xytext=point + away * 0.10 * span,
+                fontsize=7.5,
+                color="#1F3864",
+                ha="center",
+                va="center",
+                bbox={"boxstyle": "round,pad=0.14", "fc": "white", "ec": "none", "alpha": 0.8},
+                arrowprops={"arrowstyle": "-", "color": "#8FAADC", "lw": 0.6},
+            )
+        ax.set_title(title, fontsize=12)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_frame_on(False)
+    figure.suptitle("The 890 odor-token embeddings, the forty most frequent named", fontsize=13)
+    figure.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(figure)
+
+
+def odor_tsne_figure(
+    before: np.ndarray, after: np.ndarray, tokens: list[str], positions: list[int], path: Path
+) -> None:
+    """The same tokens spread by t-SNE, which separates the neighbourhoods PCA keeps in one blob."""
+    figure, axes = plt.subplots(1, 2, figsize=(14, 7))
+    for ax, coordinates, title in zip(
+        axes, (before, after), ("before step 2", "after step 2"), strict=True
+    ):
+        span = coordinates.max(axis=0) - coordinates.min(axis=0)
+        middle = coordinates.mean(axis=0)
+        ax.scatter(coordinates[:, 0], coordinates[:, 1], s=40, color="#B4C7E7", alpha=0.85)
+        for name, position in zip(tokens, positions, strict=True):
+            point = coordinates[position]
+            direction = point - middle
+            length = float(np.linalg.norm(direction))
+            away = direction / length if length else np.array([0.0, 1.0])
+            ax.annotate(
+                name,
+                point,
+                xytext=point + away * 0.09 * span,
+                fontsize=9,
+                color="#1F3864",
+                ha="center",
+                va="center",
+                bbox={"boxstyle": "round,pad=0.2", "fc": "white", "ec": "none", "alpha": 0.85},
+                arrowprops={"arrowstyle": "-", "color": "#8FAADC", "lw": 0.7},
+            )
+        ax.set_title(title, fontsize=13)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_frame_on(False)
+    figure.suptitle(
+        "The 890 odor-token embeddings by t-SNE, the forty most frequent named", fontsize=14
+    )
+    figure.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(figure)
+
+
+def odor_overlap_figure(bins: list[dict], path: Path) -> None:
+    """How similar the embeddings are as the molecules two tokens share go up, one bar per overlap band."""
+    figure, ax = plt.subplots(figsize=(7, 4))
+    labels = [f"{found['label']}\n{found['pairs']:,} pairs" for found in bins]
+    values = [found["mean_cosine"] for found in bins]
+    bars = ax.bar(range(len(bins)), values, color="#1F3864", width=0.65)
+    ax.bar_label(bars, fmt="%.4f", fontsize=8, padding=2)
+    ax.set_xticks(range(len(bins)), labels, fontsize=8)
+    ax.set_ylim(0.94, max(values) + 0.004)
+    ax.set_xlabel("Jaccard overlap of the molecules the two tokens label")
+    ax.set_ylabel("mean cosine between the embeddings")
+    ax.set_title("Shared molecules against embedding closeness (scale starts at 0.94)")
+    figure.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(figure)
+
+
+def odor_heatmap(similarity: np.ndarray, tokens: list[str], path: Path) -> None:
+    """Cosine between the forty most frequent odor tokens, in an order that puts similar ones together."""
+    figure, ax = plt.subplots(figsize=(9, 8))
+    image = ax.imshow(similarity, cmap="RdBu_r", vmin=0.90, vmax=1.0)
+    ax.set_xticks(range(len(tokens)), tokens, rotation=90, fontsize=7)
+    ax.set_yticks(range(len(tokens)), tokens, fontsize=7)
+    ax.set_xticks(np.arange(-0.5, len(tokens)), minor=True)
+    ax.set_yticks(np.arange(-0.5, len(tokens)), minor=True)
+    ax.grid(which="minor", color="white", linewidth=0.6)
+    ax.tick_params(which="minor", length=0)
+    figure.colorbar(image, ax=ax, fraction=0.046, pad=0.02, label="cosine")
+    ax.set_title(
+        "Cosine between the forty most frequent odor tokens, after step 2 (scale starts at 0.90)",
+        fontsize=11,
+    )
+    figure.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(figure)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Draw the curves of a training run.")
     parser.add_argument("--stage", choices=("1", "2", "3"), default="2")

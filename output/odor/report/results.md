@@ -38,11 +38,11 @@
 
 ## The baseline
 
-| split | ridge on Morgan bits | the transformer | difference |
-|---|---|---|---|
-| validation | 0.725 | 0.832 | +0.107 |
-| test | 0.736 | 0.811 | +0.075 |
-| dream | 0.670 | 0.776 | +0.106 |
+| split | ridge ROC-AUC | decoder ROC-AUC | ridge average precision | decoder average precision |
+|---|---|---|---|---|
+| validation | 0.725 | 0.832 | 0.223 | 0.224 |
+| test | 0.736 | 0.811 | 0.261 | 0.268 |
+| dream | 0.670 | 0.776 | 0.178 | 0.224 |
 
 ### The ten odor tokens it ranks worst on the test molecules
 

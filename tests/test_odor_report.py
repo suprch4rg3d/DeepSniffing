@@ -149,9 +149,9 @@ def test_the_per_token_table_names_the_tokens_it_ranks_worst():
 
 
 def test_the_baseline_table_puts_the_two_models_side_by_side():
-    baseline = {"splits": {"test": {"roc_auc_macro": 0.736}}}
-    classifier = {"test": {"roc_auc_macro": 0.811}}
-    assert "| test | 0.736 | 0.811 | +0.075 |" in report.baseline_table(baseline, classifier)
+    baseline = {"splits": {"test": {"roc_auc_macro": 0.736, "average_precision_macro": 0.261}}}
+    classifier = {"test": {"roc_auc_macro": 0.811, "average_precision_macro": 0.268}}
+    assert "| test | 0.736 | 0.811 | 0.261 | 0.268 |" in report.baseline_table(baseline, classifier)
 
 
 def test_the_data_table_counts_what_the_run_learned_from():

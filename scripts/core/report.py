@@ -81,14 +81,20 @@ def eda_table(eda: dict) -> str:
 
 
 def baseline_table(baseline: dict, classifier: dict) -> str:
-    """The ridge baseline beside the transformer, split by split."""
-    rows = ["| split | ridge on Morgan bits | the transformer | difference |", "|---|---|---|---|"]
+    """The ridge baseline beside the transformer, on both numbers that matter: ranking and precision."""
+    rows = [
+        "| split | ridge ROC-AUC | decoder ROC-AUC | ridge average precision | decoder average precision |",
+        "|---|---|---|---|---|",
+    ]
     for split, found in baseline["splits"].items():
-        neural = classifier.get(split, {}).get("roc_auc_macro")
-        ridge = found.get("roc_auc_macro")
-        if neural is None or ridge is None:
+        neural = classifier.get(split, {})
+        if neural.get("roc_auc_macro") is None or found.get("roc_auc_macro") is None:
             continue
-        rows.append(f"| {split} | {ridge:.3f} | {neural:.3f} | {neural - ridge:+.3f} |")
+        rows.append(
+            f"| {split} | {found['roc_auc_macro']:.3f} | {neural['roc_auc_macro']:.3f} "
+            f"| {found['average_precision_macro']:.3f} "
+            f"| {neural['average_precision_macro']:.3f} |"
+        )
     return "\n".join(rows)
 
 

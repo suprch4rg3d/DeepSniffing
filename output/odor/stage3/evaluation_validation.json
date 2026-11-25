@@ -1,0 +1,11 @@
+{
+ "split": "validation",
+ "odor_tokens_scorable": 350,
+ "odor_tokens_in_all": 890,
+ "roc_auc_macro": 0.8315710952484336,
+ "roc_auc_macro_odor_tokens_seen_10_times": 0.8127849444756104,
+ "average_precision_macro": 0.22364774305253912,
+ "precision_at_5": 0.3590909242630005,
+ "precision_at_own_count": 0.39256763458251953,
+ "molecules": 352
+}

@@ -194,6 +194,40 @@ def odor_tsne_figure(
     plt.close(figure)
 
 
+def request_norms(values: dict, path: Path) -> None:
+    """The mean norm of the scale and the shift at each layer, beside a typical hidden state."""
+    layers = np.arange(1, len(values["scale"]) + 1)
+    figure, axes = plt.subplots(1, 2, figsize=(11, 4))
+    axes[0].plot(layers, values["scale"], marker="o", label="scale")
+    axes[0].plot(layers, values["shift"], marker="o", label="shift")
+    axes[0].plot(layers, values["hidden"], marker="o", linestyle="--", label="typical hidden state")
+    axes[0].set_yscale("log")
+    axes[0].set_xlabel("layer")
+    axes[0].set_ylabel("norm, log scale")
+    axes[0].legend(frameon=False)
+    axes[1].plot(layers, values["scale_over_hidden"], marker="o", label="scale / hidden")
+    axes[1].plot(layers, values["shift_over_hidden"], marker="o", label="shift / hidden")
+    axes[1].set_xlabel("layer")
+    axes[1].set_ylabel("share of a typical hidden state")
+    axes[1].legend(frameon=False)
+    figure.suptitle("What the request adds at each layer")
+    figure.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(figure)
+
+
+def request_heatmap(norms: np.ndarray, tokens: list[str], path: Path) -> None:
+    """The norm of each layer's shift for the thirty most frequent odor tokens."""
+    figure, ax = plt.subplots(figsize=(6, 8))
+    image = ax.imshow(norms, aspect="auto", cmap="viridis")
+    ax.set_xticks(range(norms.shape[1]), [str(i + 1) for i in range(norms.shape[1])])
+    ax.set_yticks(range(len(tokens)), tokens, fontsize=8)
+    ax.set_xlabel("layer")
+    figure.colorbar(image, ax=ax, label="norm of the shift")
+    ax.set_title("Where each of the thirty most frequent tokens pushes")
+    figure.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(figure)
+
+
 def odor_overlap_figure(bins: list[dict], path: Path) -> None:
     """How similar the embeddings are as the molecules two tokens share go up, one bar per overlap band."""
     figure, ax = plt.subplots(figsize=(7, 4))

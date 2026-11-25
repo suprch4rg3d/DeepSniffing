@@ -1,0 +1,10 @@
+device: cpu, base model
+step 2, the generator: odor tokens to molecule (smoke)
+6344 training and 352 validation molecules
+epoch 01: train 1.0797  validation 0.9240  (odor_to_molecule 0.9240  with_odor 0.9236  without_odor 0.9411  request gain +0.0176)
+best validation loss 0.9240
+device: cpu, base model
+step 3, the classifier: the odor tokens of a molecule, from the frozen pretrained decoder
+6344 training and 352 validation molecules with odor tokens, 890 odor tokens
+epoch 001: train 83.945  validation 35.502  ROC-AUC 0.6593  average precision 0.0827
+best validation loss 35.502

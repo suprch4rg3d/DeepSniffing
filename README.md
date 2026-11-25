@@ -21,7 +21,7 @@ model is built in three steps, and each step stands alone:
 3. **Classifier**: molecule → odor tokens. A small head on the frozen pretrained decoder predicts which of the 890
    odor tokens a molecule has.
 
-The odor tokens come from eleven perfumery and flavor sources in Pyrfume, which together give 7,516 molecules with
+The odor tokens come from nine perfumery and flavor sources in Pyrfume, which together give 7,516 molecules with
 odor tokens. The DREAM Olfaction Prediction Challenge molecules are held out of all training and used as an external
 test. RDKit is used to parse and canonicalize structures and to check what the model writes.
 
@@ -154,7 +154,7 @@ poetry run ds-build        # download PubChem, then build every table and the pa
 `ds-prepare` skips files that are already present; `poetry run ds-prepare --force-download` redownloads them.
 `ds-build` runs four modules in order, each of which can also be run alone with `python -m`:
 
-1. `scripts/preprocessing/odor_tokens.py` merges the odor tokens of the eleven sources, gives every molecule its
+1. `scripts/preprocessing/odor_tokens.py` merges the odor tokens of the nine sources, gives every molecule its
    PubChem CID and structure, and asks PubChem (through `scripts/data/odor_pubchem.py`) only for what a source leaves out.
 2. `scripts/preprocessing/pubchem_structures.py` downloads PubChem's `CID-SMILES.gz` and `CID-Mass.gz`, keeps the
    58,854,892 compounds of 350 Da or less, and converts a sample of 3.4 million of them to canonical SMILES and SELFIES.
@@ -252,7 +252,7 @@ poetry run python -m scripts.core.report                      # results.md and t
 | **RDKit** | The open-source chemistry toolkit used here to parse SMILES, canonicalize them, and check and weigh what the model writes. [RDKit documentation](https://www.rdkit.org/docs/GettingStartedInPython.html) |
 | **Stereochemistry** | The three-dimensional arrangement of atoms around parts of a molecule. Isomeric SMILES can encode it when the source structure includes it. |
 | **Atom** | A unit of an element in a molecule, such as carbon or oxygen. |
-| **Pyrfume** | A public collection of olfaction datasets. The odor sources of this project (Leffingwell, The Good Scents Company, Arctander, FlavorDB, Sharma, IFRA, AromaDB, Sigma, Flavornet, Dravnieks, Keller) are read from it at a pinned revision. |
+| **Pyrfume** | A public collection of olfaction datasets. The nine odor sources of this project (Leffingwell, The Good Scents Company, Arctander, Sharma's two sets, IFRA, AromaDB, Sigma, Flavornet) are read from it at a pinned revision. The Keller DREAM list is read too, but only as the held-out test. |
 | **PubChem** | The public database of chemical molecules. It gives the structures for the pretraining and the CID that matches a molecule across sources. |
 | **Molecular weight (Da)** | The mass of a molecule. The pretraining keeps molecules of 350 Da or less, because larger molecules rarely evaporate enough to smell. |
 

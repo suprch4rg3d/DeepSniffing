@@ -6,6 +6,16 @@
 | test | 352 | 0.7124 | 2.04 | +0.212 ± 0.020 | 90% |
 | dream | 468 | 0.6972 | 2.01 | +0.298 ± 0.016 | 97% |
 
+## The data
+
+| measure | value |
+|---|---|
+| molecules | 7,516: 6,344 train, 352 validation, 352 test, 468 DREAM |
+| odor tokens | 890, 211 on a single molecule |
+| odor tokens per molecule | median 4, mean 5.8, most 34 |
+| sources | 9 |
+| weight | median 174 Da, 1.5% over 350 |
+
 ## What it wrote
 
 | request | valid | unique | novel | median weight | over 350 | nearest training | over 0.7 |

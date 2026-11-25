@@ -564,3 +564,17 @@ def test_a_finished_run_keeps_its_accuracy_and_leaves_no_copies_of_the_one_befor
         tmp_path.glob("*.prev")
     )  # three epochs saved over each other, and none is left over
     assert (tmp_path / "best.pt").is_file() and (tmp_path / "state.pt").is_file()
+
+
+def test_the_batch_limits_can_be_changed_without_editing_the_code():
+    from scripts.core import data
+
+    budget, size = data.ATTENTION_BUDGET, data.BATCH_SIZE
+    try:
+        data.use_budget(1000)
+        data.use_batch_size(7)
+        assert data.ATTENTION_BUDGET == 1000
+        assert data.BATCH_SIZE == 7
+    finally:
+        data.use_budget(budget)
+        data.use_batch_size(size)

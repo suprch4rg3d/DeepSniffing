@@ -8,15 +8,15 @@
 
 ## What it wrote
 
-| request | valid | unique | novel | median weight | over 350 |
-|---|---|---|---|---|---|
-| fruity | 1.00 | 0.99 | 0.70 | 184 | 0.0% |
-| woody | 1.00 | 1.00 | 0.86 | 204 | 2.0% |
-| musk | 1.00 | 0.89 | 0.85 | 228 | 0.6% |
-| sulfurous | 1.00 | 0.95 | 0.74 | 148 | 0.0% |
-| minty + spearmint | 1.00 | 0.98 | 0.80 | 168 | 0.5% |
-| minty + caraway | 1.00 | 0.99 | 0.77 | 160 | 0.0% |
-| (nothing asked for) | 1.00 | 1.00 | 0.99 | 271 | 6.0% |
+| request | valid | unique | novel | median weight | over 350 | nearest training | over 0.7 |
+|---|---|---|---|---|---|---|---|
+| fruity | 1.00 | 0.99 | 0.70 | 184 | 0.0% | n/a | n/a |
+| woody | 1.00 | 1.00 | 0.86 | 204 | 2.0% | n/a | n/a |
+| musk | 1.00 | 0.89 | 0.85 | 228 | 0.6% | n/a | n/a |
+| sulfurous | 1.00 | 0.95 | 0.74 | 148 | 0.0% | n/a | n/a |
+| minty + spearmint | 1.00 | 0.98 | 0.80 | 168 | 0.5% | n/a | n/a |
+| minty + caraway | 1.00 | 0.99 | 0.77 | 160 | 0.0% | n/a | n/a |
+| (nothing asked for) | 1.00 | 1.00 | 0.99 | 271 | 6.0% | n/a | n/a |
 
 ## The classifier
 
@@ -25,3 +25,18 @@
 | validation | 352 | 0.832 | 0.224 | 0.359 | 0.393 |
 | test | 352 | 0.811 | 0.268 | 0.381 | 0.399 |
 | dream | 468 | 0.776 | 0.224 | 0.580 | 0.425 |
+
+### The ten odor tokens it ranks worst on the test molecules
+
+| odor token | ROC-AUC | molecules |
+|---|---|---|
+| linden | 0.043 | 1 |
+| linden flower | 0.057 | 1 |
+| powerful | 0.068 | 1 |
+| fat | 0.134 | 1 |
+| concord grape | 0.154 | 1 |
+| sea | 0.193 | 2 |
+| opoponax | 0.197 | 2 |
+| bean green bean | 0.199 | 1 |
+| tart | 0.225 | 1 |
+| peppery | 0.254 | 1 |

@@ -7,5 +7,110 @@
  "average_precision_macro": 0.2241826962898379,
  "precision_at_5": 0.5803418755531311,
  "precision_at_own_count": 0.4251279830932617,
- "molecules": 468
+ "molecules": 468,
+ "odor_tokens_scored": 522,
+ "per_token_worst": [
+  {
+   "token": "bread bake",
+   "auc": 0.012847965738758016,
+   "molecules": 1
+  },
+  {
+   "token": "fish",
+   "auc": 0.09421841541755893,
+   "molecules": 1
+  },
+  {
+   "token": "winelike",
+   "auc": 0.09635974304068518,
+   "molecules": 1
+  },
+  {
+   "token": "apple cook apple",
+   "auc": 0.13276231263383298,
+   "molecules": 1
+  },
+  {
+   "token": "bay",
+   "auc": 0.13276231263383298,
+   "molecules": 1
+  },
+  {
+   "token": "guava",
+   "auc": 0.14346895074946464,
+   "molecules": 1
+  },
+  {
+   "token": "root",
+   "auc": 0.15483870967741933,
+   "molecules": 3
+  },
+  {
+   "token": "currant black currant",
+   "auc": 0.16274089935760172,
+   "molecules": 1
+  },
+  {
+   "token": "mildew",
+   "auc": 0.17344753747323338,
+   "molecules": 1
+  },
+  {
+   "token": "gooseberry",
+   "auc": 0.18415417558886504,
+   "molecules": 1
+  }
+ ],
+ "per_token_best": [
+  {
+   "token": "rosewood",
+   "auc": 1.0,
+   "molecules": 2
+  },
+  {
+   "token": "roast beef",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "pork",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "pepper bell pepper",
+   "auc": 1.0,
+   "molecules": 2
+  },
+  {
+   "token": "patchouli",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "paper",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "nitrile",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "lemongrass",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "eucalyptus",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "cotton candy",
+   "auc": 1.0,
+   "molecules": 1
+  }
+ ]
 }

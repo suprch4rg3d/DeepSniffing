@@ -7,5 +7,110 @@
  "average_precision_macro": 0.22364774305253912,
  "precision_at_5": 0.3590909242630005,
  "precision_at_own_count": 0.39256763458251953,
- "molecules": 352
+ "molecules": 352,
+ "odor_tokens_scored": 350,
+ "per_token_worst": [
+  {
+   "token": "neutral",
+   "auc": 0.031339031339031376,
+   "molecules": 1
+  },
+  {
+   "token": "chlorine",
+   "auc": 0.03418803418803418,
+   "molecules": 1
+  },
+  {
+   "token": "indolic",
+   "auc": 0.11111111111111116,
+   "molecules": 1
+  },
+  {
+   "token": "seashore",
+   "auc": 0.17948717948717952,
+   "molecules": 1
+  },
+  {
+   "token": "beany",
+   "auc": 0.20512820512820518,
+   "molecules": 1
+  },
+  {
+   "token": "linalool",
+   "auc": 0.2285714285714286,
+   "molecules": 2
+  },
+  {
+   "token": "almost odorless",
+   "auc": 0.23361823361823364,
+   "molecules": 1
+  },
+  {
+   "token": "watermelon",
+   "auc": 0.28205128205128205,
+   "molecules": 1
+  },
+  {
+   "token": "dewy",
+   "auc": 0.32193732193732194,
+   "molecules": 1
+  },
+  {
+   "token": "hay new mow hay",
+   "auc": 0.3447293447293447,
+   "molecules": 1
+  }
+ ],
+ "per_token_best": [
+  {
+   "token": "rum",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "petitgrain",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "mentholic",
+   "auc": 1.0,
+   "molecules": 2
+  },
+  {
+   "token": "honeydew",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "goaty",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "goat",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "gasoline",
+   "auc": 1.0,
+   "molecules": 3
+  },
+  {
+   "token": "fruit dry fruit",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "flowery",
+   "auc": 1.0,
+   "molecules": 1
+  },
+  {
+   "token": "borneol",
+   "auc": 1.0,
+   "molecules": 1
+  }
+ ]
 }

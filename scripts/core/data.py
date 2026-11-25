@@ -144,8 +144,8 @@ def packed_batches(
     packed: tuple[np.ndarray, np.ndarray, np.ndarray],
     rng: random.Random,
     shuffle: bool,
-    batch_size: int = BATCH_SIZE,
-    budget: int = ATTENTION_BUDGET,
+    batch_size: int | None = None,
+    budget: int | None = None,
     request: bool = False,
 ):
     """Stage 1 batches cut straight out of the packed tokens: ``<bos> molecule tokens <eos>``, loss from the first.
@@ -157,6 +157,8 @@ def packed_batches(
     molecules keep that prediction in practice (and it is the one that guidance pushes away from), with
     molecules the model has no odor tokens for.
     """
+    batch_size = BATCH_SIZE if batch_size is None else batch_size
+    budget = ATTENTION_BUDGET if budget is None else budget
     tokens, offsets, rows = packed
     bos, eos, pad = (vocabulary.special(name) for name in ("<bos>", "<eos>", "<pad>"))
     front = (
@@ -243,10 +245,12 @@ def batches(
     kinds: list,
     rng: random.Random,
     shuffle: bool,
-    batch_size: int = BATCH_SIZE,
-    budget: int = ATTENTION_BUDGET,
+    batch_size: int | None = None,
+    budget: int | None = None,
 ):
     """Padded token numbers and the mask of the tokens the loss counts, per batch."""
+    batch_size = BATCH_SIZE if batch_size is None else batch_size
+    budget = ATTENTION_BUDGET if budget is None else budget
     examples = [
         kind(vocabulary, selfies, odor_tokens, rng)
         for selfies, odor_tokens in items

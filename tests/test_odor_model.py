@@ -566,15 +566,34 @@ def test_a_finished_run_keeps_its_accuracy_and_leaves_no_copies_of_the_one_befor
     assert (tmp_path / "best.pt").is_file() and (tmp_path / "state.pt").is_file()
 
 
-def test_the_batch_limits_can_be_changed_without_editing_the_code():
-    from scripts.core import data
+def test_the_batch_limits_apply_when_they_are_set():
+    import random
 
+    import numpy as np
+
+    from scripts.core import data
+    from scripts.core.vocabulary import Vocabulary
+
+    vocabulary = Vocabulary.load()
+    count, length = 300, 10
+    packed = (
+        np.arange(count * length, dtype=np.int64),
+        np.arange(0, (count + 1) * length, length, dtype=np.int64),
+        np.arange(count, dtype=np.int64),
+    )
     budget, size = data.ATTENTION_BUDGET, data.BATCH_SIZE
+
+    def largest():
+        batches = list(data.packed_batches(vocabulary, packed, random.Random(0), False))
+        return max(ids.shape[0] for ids, _ in batches)
+
     try:
+        data.use_batch_size(256)
         data.use_budget(1000)
-        data.use_batch_size(7)
-        assert data.ATTENTION_BUDGET == 1000
-        assert data.BATCH_SIZE == 7
+        assert largest() <= 7
+        data.use_budget(1 << 30)
+        data.use_batch_size(8)
+        assert largest() == 8
     finally:
         data.use_budget(budget)
         data.use_batch_size(size)

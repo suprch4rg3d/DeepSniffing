@@ -26,6 +26,14 @@
 | test | 352 | 0.811 | 0.268 | 0.381 | 0.399 |
 | dream | 468 | 0.776 | 0.224 | 0.580 | 0.425 |
 
+## The baseline
+
+| split | ridge on Morgan bits | the transformer | difference |
+|---|---|---|---|
+| validation | 0.725 | 0.832 | +0.107 |
+| test | 0.736 | 0.811 | +0.075 |
+| dream | 0.670 | 0.776 | +0.106 |
+
 ### The ten odor tokens it ranks worst on the test molecules
 
 | odor token | ROC-AUC | molecules |

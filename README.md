@@ -36,11 +36,13 @@ validation molecules were used to choose settings, the test molecules and the DR
 
 ## Project state
 
-The repository contains the data pipeline (odor sources and the PubChem download), the three training steps, the
-evaluation, plots and report scripts, and tests. The pretrained decoder, the generator and the classifier are
-trained; their results are in [ODOR_TRAINING.md](ODOR_TRAINING.md). The earlier work, which predicted odor profiles
-from structure, is no longer in the tree: it is at the git tag
-`archive/structure-to-odor-profile`, and the parts no commit holds are attached to that release.
+The repository holds the whole decoder: the data pipeline, the three training steps, the evaluation, the plots and
+the report, eight analysis scripts and ten notebooks. The pretrained decoder, the generator and the classifier are
+trained and committed, with their histories, their evaluations and [the report](output/odor/report/results.md). The
+numbers and the limits are in [ODOR_TRAINING.md](ODOR_TRAINING.md).
+
+The earlier work, which predicted odor profiles from structure, is not in the tree. It is at the git tag
+`archive/structure-to-odor-profile`, and the material no commit holds is on that release.
 
 ## Repository layout
 
@@ -57,37 +59,23 @@ DeepSniffing/
 │       ├── structures.csv                      The 3.4 million pretraining molecules
 │       └── stage1_tokens.npy (+ companions)    The pretraining molecules packed as token numbers
 ├── scripts/
-│   ├── data/
-│   │   ├── prepare_data.py                     Download the odor sources and the PubChem archives
-│   │   └── odor_pubchem.py                     Ask PubChem for what an odor source leaves out
-│   ├── preprocessing/
-│   │   ├── odor_tokens.py                      Read the odor sources and merge their odor tokens
-│   │   ├── pubchem_structures.py               Filter PubChem to 350 Da or less and convert to SELFIES
-│   │   ├── odor_tables.py                      Build the tables, the split and the vocabulary
-│   │   ├── molecule_tokens.py                  Pack the pretraining molecules as token numbers
-│   │   ├── build_odor.py                       Run the four steps above (ds-build)
-│   │   └── odor_dev.py                         A small fixed copy of the data for quick tests
-│   └── core/
-│       ├── model.py, vocabulary.py, data.py    The decoder, its tokens and its training texts
-│       ├── training.py                         The shared engine: one epoch, the loop, saving, loading
-│       ├── pretrain.py                         Step 1: the pretraining
-│       ├── generator.py                        Step 2: odor tokens -> molecule
-│       ├── classifier.py                       Step 3: molecule -> odor tokens
-│       ├── train.py                            The command line (ds-train)
-│       ├── evaluate.py, compare.py             Measure the generator, compare two runs
-│       ├── metrics.py, history.py              The numbers of a run, and the record of it
-│       └── plots.py, report.py                 Every figure, and the table of results
-├── tests/                                      Tests of the pipeline, the model and the steps
-├── output/odor/                                Trained models, histories, plots, reports (only stage1/best.pt is committed)
-│   ├── stage1/  stage2/  stage3/               The pretraining, the generator, the classifier
-│   └── report/                                 results.md and the figures of the evaluations
+│   ├── data/                                   Download the odor sources and the PubChem answers
+│   ├── preprocessing/                          Merge the sources, filter PubChem, build the tables and the vocabulary
+│   ├── core/                                   The decoder, the three steps, the evaluation, the report
+│   └── analysis/                               Eight scripts, one question each, one JSON each
+├── tests/                                      Tests of the pipeline, the model, the steps and the analyses
+├── output/
+│   ├── odor/                                   Checkpoints, histories, evaluations, results.md and figures
+│   └── analysis/                               One JSON per analysis script
+├── notebooks/                                  Ten notebooks; none stores outputs
 ├── docs/
-│   └── mai642_project_description.md           Course project description
+│   ├── mai642_project_description.md           Course project description
+│   └── glossary.md                             The terms, from molecule tokens to macro ROC-AUC
+├── RUN.txt                                     Commit, date, GPU and versions of the committed run
 ├── ODOR_TRAINING.md                            Data, training, scoring, results and limits
-├── pyproject.toml                              Poetry project and dependency configuration
-├── poetry.lock                                 Locked dependency versions
+├── pyproject.toml, poetry.lock                  Poetry project and locked versions
 ├── requirements.txt                            Pip dependency list
-└── README.md                                   Setup, data preparation, and training guide
+└── README.md                                   Setup, data preparation, training and analysis
 ```
 
 ## Requirements
@@ -239,59 +227,31 @@ poetry run python -m scripts.core.plots --stage 2             # the curves of a 
 poetry run python -m scripts.core.report                      # results.md and the figures of the evaluations
 ```
 
+## Analysis
+
+`scripts/analysis/` holds the measurements behind the notebooks. Each script reads the committed checkpoints or
+tables, writes one JSON under `output/analysis/`, and several draw a figure under `output/odor/report/`.
+
+| Script | Question | Headline |
+|---|---|---|
+| `eda.py` | What is in the data? | 7,516 molecules, 890 odor tokens, 211 on a single molecule |
+| `baseline.py` | What does a classic model get? | ridge on Morgan bits: ROC-AUC 0.725, 0.736 and 0.670 |
+| `embeddings.py` | Did step 2 move the odor tokens? | median move 3.1 percent, 68 percent of neighbours kept |
+| `ablations.py` | Which adapter carries the request? | +0.008 to +0.065 nats per adapter, +0.227 for all six |
+| `generated_vs_real.py` | Does it write molecules near the real ones? | fruity 0.67 against 0.68, musk 0.48 against 0.61 |
+| `odor_map.py` | Do related odors sit together? | Spearman 0.018 before step 2, -0.103 after, +0.162 among shared pairs |
+| `request_layers.py` | Where does the request act? | shift norm 6.9 to 69.6, its share of the state 17 to 10 percent |
+| `hidden_states.py` | Is the odor readable from a molecule's state? | silhouette -0.005, five-nearest-neighbour vote 0.57 against 0.22 chance |
+
+The notebooks read the committed files and draw the figures. `00_data_overview` is the data, and
+`analysis_classifier`, `analysis_generator`, `analysis_representations`, `analysis_ablation`,
+`analysis_generated` and `analysis_hidden` take one claim each. `final_report` is the graded document.
+`deepsniffing-on-colab` runs the whole pipeline on an L4, and `batch-budget-experiment-on-colab` compares two
+attention budgets. None of them stores outputs.
+
 ## Glossary
 
-### Molecule structure
-
-| Term | Meaning in this project |
-|---|---|
-| **CID** | PubChem Compound Identifier: the number used to match a molecule across the source files. |
-| **SMILES** | Text notation for a molecule's atoms and bonds. |
-| **Canonical SMILES** | A consistent ordering of a molecule's SMILES, generated by RDKit, so that strings can be compared. It does not verify that a source assigned the right structure to a CID. |
-| **SELFIES** | A text notation for molecules in which every string is a valid molecule. The decoder reads and writes SELFIES, so what it writes is valid by construction. |
-| **RDKit** | The open-source chemistry toolkit used here to parse SMILES, canonicalize them, and check and weigh what the model writes. [RDKit documentation](https://www.rdkit.org/docs/GettingStartedInPython.html) |
-| **Stereochemistry** | The three-dimensional arrangement of atoms around parts of a molecule. Isomeric SMILES can encode it when the source structure includes it. |
-| **Atom** | A unit of an element in a molecule, such as carbon or oxygen. |
-| **Pyrfume** | A public collection of olfaction datasets. The nine odor sources of this project (Leffingwell, The Good Scents Company, Arctander, Sharma's two sets, IFRA, AromaDB, Sigma, Flavornet) are read from it at a pinned revision. The Keller DREAM list is read too, but only as the held-out test. |
-| **PubChem** | The public database of chemical molecules. It gives the structures for the pretraining and the CID that matches a molecule across sources. |
-| **Molecular weight (Da)** | The mass of a molecule. The pretraining keeps molecules of 350 Da or less, because larger molecules rarely evaporate enough to smell. |
-
-### Tokens and the model
-
-| Term | Meaning in this project |
-|---|---|
-| **Molecule token** | One piece of a SELFIES string, such as `[C]` or `[=O]`. There are 1,181 of them. A molecule is written as a sequence of molecule tokens. |
-| **Odor token** | One odor term, such as `fruity` or `musk`. There are 890 of them. A request is a set of odor tokens. |
-| **Special token** | A marker such as `<bos>`, `<eos>`, `<odor>` or `<sep>`. There are 6. |
-| **Vocabulary** | The 2,077 tokens (6 special, 1,181 molecule, 890 odor) and their numbers, in `vocabulary.json`. A saved model is tied to it. |
-| **Request** | The text `<odor> odor-token odor-token <sep>` that comes before a molecule in the generator. Its odor tokens are a set: they have no position, so their order cannot matter. |
-| **Decoder-only transformer** | A model that reads tokens left to right and predicts the next one. Here it has 6 layers, 8 attention heads and width 256, about 6.3 million parameters. |
-| **Embedding** | A table of 256 numbers for each token. The odor-token embeddings are the model's meaning of each odor token, and are learned in step 2. |
-| **Request adapter** | A small layer in each decoder layer. It averages the asked odor tokens into one vector and uses it to scale and shift the state for every molecule token after `<sep>`. Its weights start at zero, so it changes nothing until it is trained. |
-| **Pretraining** | Step 1: learning to write molecules from millions of molecules with no odor tokens. |
-| **Generator** | Step 2: the decoder fine-tuned to write a molecule for a set of odor tokens. The loss is on the molecule only. |
-| **Classifier** | Step 3: a head trained on the frozen pretrained decoder to score each odor token for a molecule. |
-| **Odor descriptor** | A term people use to describe an odor, such as `fruity` or `woody`. Each is one odor token. A source lists the terms that a perfumery or flavor reference gives to a molecule. |
-| **Attention** | The operation that lets a token look at earlier tokens. It is causal here: a token never sees the ones after it. |
-| **Dropout** | Randomly switching off part of the model during training so that it does not memorize. 0.1 in the pretraining, 0.2 in the generator. |
-| **Layer decay** | In the generator, each layer nearer the input learns at 0.8 of the rate of the layer above it, so the odor tokens do not wipe out what the pretraining taught the lower layers. |
-| **Epoch** | One pass over the training molecules. |
-| **Replay** | Mixing pretraining molecules, written after an empty request, into the generator's epochs, so that what the pretraining knew stays in use. |
-
-### Evaluation
-
-| Term | Meaning in this project |
-|---|---|
-| **Training split** | Molecules used to update model weights. |
-| **Validation split** | 352 held-out molecules used to choose settings and the best epoch. |
-| **Test split** | 352 held-out molecules, looked at once at the end. |
-| **DREAM molecules** | 468 molecules of the DREAM Olfaction Prediction Challenge, held out of everything the model learns from, used as an external test. |
-| **Loss** | How surprised the model is by the real molecule, in nats per molecule token. Lower is better. |
-| **Nat** | The unit of the loss: the natural logarithm of how unlikely something is. |
-| **Perplexity** | The loss as a number of equally likely choices: 2 means the model is as unsure as choosing between two tokens. |
-| **Gain** | The loss without the odor tokens minus the loss with them. Zero means the model ignores its request. |
-| **ROC-AUC** | How well the classifier ranks the molecules that have an odor token above those that do not, averaged over the odor tokens. 0.5 is chance and 1 is perfect. |
-| **Valid / unique / novel** | Of the molecules the generator writes: the share RDKit can read, the share that differ from each other, and the share found in neither step's training set. |
+The terms used here, from molecule tokens to macro ROC-AUC, are in [docs/glossary.md](docs/glossary.md).
 
 ## Project description
 

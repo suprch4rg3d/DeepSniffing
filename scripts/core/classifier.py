@@ -30,7 +30,7 @@ from torch import nn
 from scripts.core import history, training
 from scripts.core import model as model_module
 from scripts.core.data import ATTENTION_BUDGET, load_odor
-from scripts.core.metrics import odor_token_metrics, top_precision
+from scripts.core.metrics import odor_token_metrics, per_token_scores, top_precision
 from scripts.core.model import Decoder
 from scripts.core.vocabulary import Vocabulary
 
@@ -252,6 +252,10 @@ def evaluate(vocabulary: Vocabulary, split: str, tag: str | None = None) -> dict
     report["precision_at_5"] = top_precision(scores, truth, 5)
     report["precision_at_own_count"] = top_precision(scores, truth, None)
     report["molecules"] = len(truth)
+    per_token = per_token_scores(scores, truth.astype(np.int8), vocabulary.odor_tokens)
+    report["odor_tokens_scored"] = len(per_token)
+    report["per_token_worst"] = per_token[:10]
+    report["per_token_best"] = per_token[-10:][::-1]
     return report
 
 

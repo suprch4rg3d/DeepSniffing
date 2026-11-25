@@ -38,6 +38,24 @@ BATCH_SIZE = 256  # the most texts in a batch
 # The attention of a batch takes memory in proportion to texts x length x length, so a batch of long texts has
 # fewer texts: texts x length x length stays below this. 64 texts of 160 tokens fit, and one text of 837 does.
 ATTENTION_BUDGET = 64 * 160 * 160
+
+
+def use_budget(tokens: int) -> None:
+    """Change the attention budget, which is what caps a batch of long texts.
+
+    The default leaves most of a modern card unused: 64 texts of 160 tokens fit in 3.8 GB of an L4's 22.5. This
+    is here so the experiment can raise it without editing the code.
+    """
+    global ATTENTION_BUDGET
+    ATTENTION_BUDGET = int(tokens)
+
+
+def use_batch_size(texts: int) -> None:
+    """Change the cap on texts per batch, which binds instead of the budget for short texts."""
+    global BATCH_SIZE
+    BATCH_SIZE = int(texts)
+
+
 BUCKET_BATCHES = 50  # batches are made of texts of about the same length, within this many batches
 
 # token numbers, and the index the loss starts at

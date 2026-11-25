@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import argparse
 
-from scripts.core import classifier, generator, pretrain, training
+from scripts.core import classifier, data, generator, pretrain, training
 from scripts.core import model as model_module
 from scripts.core.history import logged
 from scripts.core.vocabulary import Vocabulary
@@ -40,6 +40,15 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=training.SEED,
         help="the random seed, to see how much a result moves between runs of the same settings",
+    )
+    parser.add_argument(
+        "--attention-budget",
+        type=int,
+        default=None,
+        help="the attention budget that caps a batch of long texts (default 64 x 160 x 160)",
+    )
+    parser.add_argument(
+        "--batch-size", type=int, default=None, help="the most texts in a batch (default 256)"
     )
     parser.add_argument(
         "--tag",
@@ -86,6 +95,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     model_module.use_size(args.size)
+    if args.attention_budget:
+        data.use_budget(args.attention_budget)
+    if args.batch_size:
+        data.use_batch_size(args.batch_size)
     if args.size != "base":
         training.OUTPUT_DIR = training.OUTPUT_DIR.with_name(
             f"{training.OUTPUT_DIR.name}_{args.size}"
